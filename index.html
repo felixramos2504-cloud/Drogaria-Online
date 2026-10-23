@@ -11,7 +11,7 @@
 </style>
 </head><body><main class="card">
 <img class="logo" src="./icon-192.png" alt="Ícone da Drogaria Online" width="96" height="96">
-<h1>Drogaria Online</h1><p class="muted">Versão 2.2.2</p><p>Seu cuidado mais perto de você.</p>
+<h1>Drogaria Online</h1><p class="muted">Versão 2.2.3</p><p>Seu cuidado mais perto de você.</p>
 <a class="btn" id="open" href="#" rel="noopener">Entrar na Drogaria ↗</a>
 <button class="btn secondary" type="button" id="install" hidden>Instalar aplicativo</button>
 <button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><button class="btn secondary" type="button" id="firebaseCheck">Status do Firebase Push</button><button class="btn secondary" type="button" id="registerFirebase">Registrar este aparelho no Firebase</button><button class="btn secondary" type="button" id="copyFirebaseId">Copiar identificador Firebase</button><button class="btn secondary" type="button" id="diagnosePush">Diagnosticar Push remoto</button><p id="pushDiag" class="status" role="status" hidden></p><p id="copyFirebaseStatus" class="status" role="status" hidden></p><p id="firebaseRegistrationStatus" class="status" role="status" hidden></p><p id="firebaseStatus" class="status" role="status" hidden></p><p id="pushStatus" class="status" role="status" hidden></p>
@@ -94,9 +94,9 @@ document.getElementById('diagnosePush').addEventListener('click',async()=>{
   const sub=reg?await reg.pushManager.getSubscription():null;
   const fid=localStorage.getItem('drogaria_fid');
   const token=localStorage.getItem('drogaria_fcm_token');
-  out.textContent='Permissão: '+Notification.permission+' | Service Worker: '+(reg?.active?'ativo':'não ativo')+' | Inscrição Push: '+(sub?'ativa':'ausente')+' | FID salvo: '+(fid?'sim':'não')+' | Token FCM salvo: '+(token?'sim':'não')+'.';
+  out.textContent='Permissão: '+Notification.permission+' | Service Worker: '+(reg?.active?'ativo':'não ativo')+' | Inscrição Push: '+(sub?'ativa':'ausente')+' | FID salvo: '+(fid?'sim':'não')+' | Token FCM salvo: '+(token?'sim':'não (opcional para teste por FID)')+'.';
   if(!sub)out.textContent+=' Toque em Registrar este aparelho no Firebase.';
-  else out.textContent+=' Se o Firebase Console confirmou o envio e nada chegou, confira o dispositivo destinatário e as notificações do Android.';
+  else out.textContent+=' Para testar pelo Firebase Console, use o FID completo copiado no mesmo aparelho e confirme se o console aceita o destino. Um token FCM não é obrigatório se o console aceitar o FID.';
  }catch(e){out.textContent='Falha no diagnóstico: '+String(e?.message||e);}
 });
 </script><script type="module" src="./firebase-register.js"></script><script>document.getElementById("copyFirebaseId").addEventListener("click",async()=>{const out=document.getElementById("copyFirebaseStatus");out.hidden=false;const id=localStorage.getItem("drogaria_fid")||localStorage.getItem("drogaria_fcm_token");if(!id){out.textContent="Identificador ainda não encontrado. Toque em Registrar este aparelho no Firebase primeiro.";return;}try{await navigator.clipboard.writeText(id);out.textContent="Identificador copiado. Cole no campo de teste do Firebase Console; não compartilhe publicamente.";}catch(e){out.textContent="Não foi possível copiar automaticamente. Abra pelo Chrome em HTTPS e tente novamente.";}});</script></body></html>
