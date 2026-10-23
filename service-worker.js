@@ -1,5 +1,5 @@
-const CACHE='drogaria-launcher-v7';
-const ASSETS=['./index.html','./config.js','./firebase-config.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='drogaria-launcher-v8';
+const ASSETS=['./index.html','./config.js','./firebase-config.js','./firebase-register.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
