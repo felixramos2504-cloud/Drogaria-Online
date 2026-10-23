@@ -34,21 +34,37 @@
  const pushStatus=document.getElementById('pushStatus');
  testBtn.addEventListener('click',async()=>{
    pushStatus.hidden=false;
+   const setStatus=(message)=>{pushStatus.textContent=message;};
+   setStatus('Verificando suporte e permissões…');
+   if(!window.isSecureContext){setStatus('Abra o endereço HTTPS do GitHub Pages; notificações exigem conexão segura.');return;}
    if(!('Notification' in window)||!('serviceWorker' in navigator)){
-     pushStatus.textContent='Este navegador não oferece notificações via Service Worker.';return;
+     setStatus('Este navegador não disponibiliza Notification + Service Worker. Tente no Chrome do Android.');return;
    }
    try{
      let permission=Notification.permission;
-     if(permission==='default') permission=await Notification.requestPermission();
-     if(permission!=='granted'){pushStatus.textContent='Notificações não autorizadas. Ajuste as permissões do navegador.';return;}
-     const reg=await navigator.serviceWorker.ready;
+     if(permission==='default')permission=await Notification.requestPermission();
+     if(permission!=='granted'){setStatus('Permissão: '+permission+'. Habilite notificações para este endereço no Android.');return;}
+     setStatus('Permissão concedida. Verificando Service Worker…');
+     const reg=await Promise.race([
+       navigator.serviceWorker.register('./service-worker.js',{scope:'./'}),
+       new Promise((_,reject)=>setTimeout(()=>reject(new Error('registro do Service Worker excedeu 8 segundos')),8000))
+     ]);
+     if(!reg.active){
+       await Promise.race([
+         navigator.serviceWorker.ready,
+         new Promise((_,reject)=>setTimeout(()=>reject(new Error('Service Worker não ativou em 8 segundos')),8000))
+       ]);
+     }
+     setStatus('Permissão concedida, Service Worker ativo. Tentando exibir aviso…');
      await reg.showNotification('Drogaria Online — teste',{
-       body:'Notificações locais autorizadas neste aparelho.',
-       icon:'./icon-192.png',badge:'./icon-192.png',
-       tag:'drogaria-teste-local',data:{url:new URL('./',location.href).href}
+       body:'Este é um teste local de notificação da Drogaria Online.',
+       icon:'./icon-192.png',
+       badge:'./icon-192.png',
+       tag:'drogaria-teste-'+Date.now(),
+       data:{url:new URL('./',location.href).href}
      });
-     pushStatus.textContent='Aviso de teste enviado ao aparelho. Este teste não é um Push Firebase.';
-   }catch(e){pushStatus.textContent='Não foi possível exibir o aviso: '+String(e.message||e);}
+     setStatus('Teste enviado ao Android (permissão: granted). Se o aviso não aparecer, confira Configurações → Apps → Chrome ou Drogaria Online → Notificações, e desative Não perturbe. Este teste não é Firebase Push.');
+   }catch(e){setStatus('Diagnóstico: '+String(e?.message||e)+'. Confirme se o site está atualizado e se o Chrome permite notificações.');}
  });
  const help=document.getElementById('installHelp');
  document.getElementById('guide').addEventListener('click',()=>{help.hidden=!help.hidden;});
