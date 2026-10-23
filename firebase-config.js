@@ -1,11 +1,11 @@
-// Firebase separado para a Drogaria Online.
-// Preencha APENAS dados públicos da configuração Web e a chave pública VAPID.
-// Nunca publique service-account.json, chaves privadas ou credenciais de servidor.
+// Configuração pública Web — projeto Firebase exclusivo da Drogaria Online.
+// Não incluir chaves privadas ou contas de serviço neste repositório.
 window.DROGARIA_FIREBASE = {
- apiKey: "",
- authDomain: "",
- projectId: "",
- appId: "",
- messagingSenderId: "",
- vapidKey: ""
+  apiKey: "AIzaSyAjo4UlvX1TiKc_59CwU6uYTgbqc099KvQ",
+  authDomain: "drogaria-online.firebaseapp.com",
+  projectId: "drogaria-online",
+  storageBucket: "drogaria-online.firebasestorage.app",
+  messagingSenderId: "277207224907",
+  appId: "1:277207224907:web:3c71efd135fcc16427b3ce",
+  vapidKey: ""
 };
