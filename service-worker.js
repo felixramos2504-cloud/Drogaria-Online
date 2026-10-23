@@ -1,4 +1,4 @@
-const CACHE='drogaria-launcher-v10';
+const CACHE='drogaria-launcher-v11';
 const ASSETS=['./index.html','./config.js','./firebase-config.js','./firebase-register.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
@@ -22,4 +22,20 @@ self.addEventListener('notificationclick',event=>{
  for(const c of clients){if(c.url.startsWith(self.registration.scope)){await c.focus();return;}}
  return self.clients.openWindow(self.registration.scope);
  }));
+});
+
+self.addEventListener('push',event=>{
+  event.waitUntil((async()=>{
+    let payload={};
+    try{payload=event.data?event.data.json():{}}catch(e){try{payload={body:event.data.text()}}catch(_){}}
+    const notice=payload.notification||payload.data||payload;
+    const title=String(notice.title||payload.title||'Drogaria Online').slice(0,100);
+    const body=String(notice.body||payload.body||'Você recebeu uma nova notificação da Drogaria Online.').slice(0,250);
+    const target=self.registration.scope;
+    await self.registration.showNotification(title,{
+      body,icon:'./icon-192.png',badge:'./icon-192.png',
+      tag:String(notice.tag||'drogaria-remoto-'+Date.now()).slice(0,100),
+      data:{url:target}
+    });
+  })());
 });
