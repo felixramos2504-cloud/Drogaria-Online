@@ -1,0 +1,24 @@
+DROGARIA ONLINE — PWA MASTER 1.5.1 (CORRECAO)
+
+O que foi corrigido:
+1. Icones sao carregados da RAIZ do repositorio, como aparecem na sua captura do GitHub.
+2. O endereco do aplicativo pode ser colocado direto na tela "Configurar link da Drogaria".
+3. Cache do service worker atualizado para a versao v2.
+
+NO GITHUB:
+- Abra o repositorio Drogaria-Online.
+- Envie os 6 arquivos do pacote para a RAIZ do repositorio (main), substituindo os existentes:
+  index.html, config.js, manifest.webmanifest, service-worker.js, icon-192.png, icon-512.png.
+- NAO coloque os icones dentro da pasta icons; nesta versao eles ficam na raiz.
+- Os demais arquivos antigos podem continuar, mas nao sao necessarios.
+- Aguarde a publicacao do Pages e atualize a pagina com Ctrl+F5.
+
+NO SITE:
+- Clique em "Configurar link da Drogaria".
+- Cole o endereco COMPLETO do seu Google Apps Script, terminado em /exec.
+- Clique em "Salvar link neste aparelho".
+- Clique em "Abrir Drogaria" para testar.
+
+IMPORTANTE: o link e salvo SOMENTE neste navegador. Para distribuir o instalador a todos os clientes sem pedir a configuracao em cada aparelho, abra o arquivo config.js do GitHub e informe o endereco publico correto entre aspas em window.DROGARIA_APP_URL = "..."; depois faca commit. O campo de configuracao na tela serve para teste e ajuste local.
+
+Este PWA continua sendo um launcher: abre o Apps Script e nao substitui o sistema de pedidos. A instalacao nao garante operacao offline da drogaria.
