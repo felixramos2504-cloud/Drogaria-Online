@@ -11,16 +11,16 @@
 </style>
 </head><body><main class="card">
 <img class="logo" src="./icon-192.png" alt="Ícone da Drogaria Online" width="96" height="96">
-<h1>Drogaria Online</h1><p class="muted">Versão 1.8.2</p><p>Seu cuidado mais perto de você.</p>
+<h1>Drogaria Online</h1><p class="muted">Versão 1.9</p><p>Seu cuidado mais perto de você.</p>
 <a class="btn" id="open" href="#" rel="noopener">Entrar na Drogaria ↗</a>
 <button class="btn secondary" type="button" id="install" hidden>Instalar aplicativo</button>
-<button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><p id="pushStatus" class="status" role="status" hidden></p>
+<button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><button class="btn secondary" type="button" id="firebaseCheck">Status do Firebase Push</button><p id="firebaseStatus" class="status" role="status" hidden></p><p id="pushStatus" class="status" role="status" hidden></p>
 <p id="installHelp" hidden>Android: abra esta página no Chrome, toque no menu ⋮ e escolha <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>. No iPhone: Safari → Compartilhar → Adicionar à Tela de Início. A disponibilidade varia conforme o navegador.</p>
 <p id="connection" class="status" role="status">Verificando conexão…</p>
 <p id="error" hidden>O endereço da loja ainda não foi configurado. Avise a administração da drogaria.</p>
 <p class="muted">A loja será aberta no Google Apps Script. Compras, login e pedidos exigem conexão com a internet.</p>
 </main>
-<script src="./config.js"></script>
+<script src="./config.js"></script><script src="./firebase-config.js"></script>
 <script>
 (()=>{
  const link=String(window.DROGARIA_APP_URL||'').trim();
@@ -30,6 +30,16 @@
  const status=document.getElementById('connection');
  function refresh(){const on=navigator.onLine;status.textContent=on?'Conexão ativa — loja disponível pela internet.':'Sem internet — conecte-se para acessar produtos e pedidos.';status.classList.toggle('offline',!on);}
  refresh();window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
+ const firebaseBtn=document.getElementById('firebaseCheck');
+ firebaseBtn.addEventListener('click',()=>{
+   const out=document.getElementById('firebaseStatus');out.hidden=false;
+   const cfg=window.DROGARIA_FIREBASE||{};
+   const fields=['apiKey','authDomain','projectId','appId','messagingSenderId','vapidKey'];
+   const missing=fields.filter(k=>!cfg[k]);
+   out.textContent=missing.length
+    ?'Firebase Push ainda não configurado. Faltam: '+missing.join(', ')+'. O teste local continua disponível.'
+    :'Configuração pública do Firebase encontrada. O registro dos dispositivos e o envio de notificações ainda não estão ativados nesta fase.';
+ });
  const testBtn=document.getElementById('notifications');
  const pushStatus=document.getElementById('pushStatus');
  testBtn.addEventListener('click',async()=>{
