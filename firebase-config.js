@@ -7,5 +7,5 @@ window.DROGARIA_FIREBASE = {
   storageBucket: "drogaria-online.firebasestorage.app",
   messagingSenderId: "277207224907",
   appId: "1:277207224907:web:3c71efd135fcc16427b3ce",
-  vapidKey: ""
+  vapidKey: "BOm48lA-urKbf7EZTRQgeqbSPx-q4xKEcbpYg4K0uqZSTX6X6Ze-gyCapP9sLopwOU7oqmwurYFHawFASwZXQeM"
 };
