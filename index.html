@@ -11,7 +11,7 @@
 </style>
 </head><body><main class="card">
 <img class="logo" src="./icon-192.png" alt="Ícone da Drogaria Online" width="96" height="96">
-<h1>Drogaria Online</h1><p>Seu cuidado mais perto de você.</p>
+<h1>Drogaria Online</h1><p class="muted">Versão 1.8.2</p><p>Seu cuidado mais perto de você.</p>
 <a class="btn" id="open" href="#" rel="noopener">Entrar na Drogaria ↗</a>
 <button class="btn secondary" type="button" id="install" hidden>Instalar aplicativo</button>
 <button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><p id="pushStatus" class="status" role="status" hidden></p>
@@ -72,6 +72,6 @@
  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;install.hidden=false;});
  install.addEventListener('click',async()=>{if(!deferredPrompt){help.hidden=false;return;}const p=deferredPrompt;deferredPrompt=null;install.hidden=true;await p.prompt();await p.userChoice;});
  window.addEventListener('appinstalled',()=>{install.hidden=true;});
- if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));
 })();
 </script></body></html>
