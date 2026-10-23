@@ -14,7 +14,7 @@
 <h1>Drogaria Online</h1><p>Seu cuidado mais perto de você.</p>
 <a class="btn" id="open" href="#" rel="noopener">Entrar na Drogaria ↗</a>
 <button class="btn secondary" type="button" id="install" hidden>Instalar aplicativo</button>
-<button class="btn secondary" type="button" id="guide">Como instalar no celular</button>
+<button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><p id="pushStatus" class="status" role="status" hidden></p>
 <p id="installHelp" hidden>Android: abra esta página no Chrome, toque no menu ⋮ e escolha <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>. No iPhone: Safari → Compartilhar → Adicionar à Tela de Início. A disponibilidade varia conforme o navegador.</p>
 <p id="connection" class="status" role="status">Verificando conexão…</p>
 <p id="error" hidden>O endereço da loja ainda não foi configurado. Avise a administração da drogaria.</p>
@@ -30,6 +30,26 @@
  const status=document.getElementById('connection');
  function refresh(){const on=navigator.onLine;status.textContent=on?'Conexão ativa — loja disponível pela internet.':'Sem internet — conecte-se para acessar produtos e pedidos.';status.classList.toggle('offline',!on);}
  refresh();window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
+ const testBtn=document.getElementById('notifications');
+ const pushStatus=document.getElementById('pushStatus');
+ testBtn.addEventListener('click',async()=>{
+   pushStatus.hidden=false;
+   if(!('Notification' in window)||!('serviceWorker' in navigator)){
+     pushStatus.textContent='Este navegador não oferece notificações via Service Worker.';return;
+   }
+   try{
+     let permission=Notification.permission;
+     if(permission==='default') permission=await Notification.requestPermission();
+     if(permission!=='granted'){pushStatus.textContent='Notificações não autorizadas. Ajuste as permissões do navegador.';return;}
+     const reg=await navigator.serviceWorker.ready;
+     await reg.showNotification('Drogaria Online — teste',{
+       body:'Notificações locais autorizadas neste aparelho.',
+       icon:'./icon-192.png',badge:'./icon-192.png',
+       tag:'drogaria-teste-local',data:{url:new URL('./',location.href).href}
+     });
+     pushStatus.textContent='Aviso de teste enviado ao aparelho. Este teste não é um Push Firebase.';
+   }catch(e){pushStatus.textContent='Não foi possível exibir o aviso: '+String(e.message||e);}
+ });
  const help=document.getElementById('installHelp');
  document.getElementById('guide').addEventListener('click',()=>{help.hidden=!help.hidden;});
  let deferredPrompt=null;const install=document.getElementById('install');
