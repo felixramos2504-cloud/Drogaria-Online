@@ -11,14 +11,14 @@
 </style>
 </head><body><main class="card">
 <img class="logo" src="./icon-192.png" alt="Ícone da Drogaria Online" width="96" height="96">
-<h1>Drogaria Online</h1><p class="muted">Versão 2.3</p><p>Seu cuidado mais perto de você.</p>
-<a class="btn" id="open" href="#" rel="noopener">Entrar na Drogaria ↗</a>
+<h1>Drogaria Online</h1><p class="muted">Versão 2.4</p><p>Seu cuidado mais perto de você.</p>
+<a class="btn" id="open" href="#" rel="noopener">Entrar na Drogaria</a>
 <button class="btn secondary" type="button" id="install" hidden>Instalar aplicativo</button>
-<button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><button class="btn secondary" type="button" id="firebaseCheck">Status do Firebase Push</button><button class="btn secondary" type="button" id="registerFirebase">Registrar este aparelho no Firebase</button><button class="btn secondary" type="button" id="copyFirebaseId">Copiar identificador Firebase</button><button class="btn secondary" type="button" id="diagnosePush">Diagnosticar Push remoto</button><button class="btn secondary" type="button" id="backgroundGuide">Testar em segundo plano</button><p class="status" id="backgroundHelp" hidden></p><p id="pushDiag" class="status" role="status" hidden></p><p id="copyFirebaseStatus" class="status" role="status" hidden></p><p id="firebaseRegistrationStatus" class="status" role="status" hidden></p><p id="firebaseStatus" class="status" role="status" hidden></p><p id="pushStatus" class="status" role="status" hidden></p>
+<details id="maintenance" style="margin-top:18px;text-align:left;border-top:1px solid #e1eee8;padding-top:12px"><summary style="cursor:pointer;font-weight:600;padding:10px 4px">Configurações e diagnóstico</summary><div style="padding-top:8px"><button class="btn secondary" type="button" id="guide">Como instalar no celular</button><button class="btn secondary" type="button" id="notifications">Testar notificações</button><button class="btn secondary" type="button" id="firebaseCheck">Status do Firebase Push</button><button class="btn secondary" type="button" id="registerFirebase">Registrar este aparelho no Firebase</button><button class="btn secondary" type="button" id="copyFirebaseId">Copiar identificador Firebase</button><button class="btn secondary" type="button" id="diagnosePush">Diagnosticar Push remoto</button><button class="btn secondary" type="button" id="backgroundGuide">Testar em segundo plano</button><p class="status" id="backgroundHelp" hidden></p><p id="pushDiag" class="status" role="status" hidden></p><p id="copyFirebaseStatus" class="status" role="status" hidden></p><p id="firebaseRegistrationStatus" class="status" role="status" hidden></p><p id="firebaseStatus" class="status" role="status" hidden></p><p id="pushStatus" class="status" role="status" hidden></p>
 <p id="installHelp" hidden>Android: abra esta página no Chrome, toque no menu ⋮ e escolha <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>. No iPhone: Safari → Compartilhar → Adicionar à Tela de Início. A disponibilidade varia conforme o navegador.</p>
-<p id="connection" class="status" role="status">Verificando conexão…</p>
+</div></details><p id="connection" class="status" role="status">Verificando conexão…</p>
 <p id="error" hidden>O endereço da loja ainda não foi configurado. Avise a administração da drogaria.</p>
-<p class="muted">A loja será aberta no Google Apps Script. Compras, login e pedidos exigem conexão com a internet.</p>
+<p class="muted">Compre pelo aplicativo com segurança. É necessária conexão com a internet.</p>
 </main>
 <script src="./config.js"></script><script src="./firebase-config.js"></script>
 <script>
