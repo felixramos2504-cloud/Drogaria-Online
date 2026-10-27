@@ -10,6 +10,8 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
     permissions:
       contents: read
     steps:
@@ -44,7 +46,7 @@ jobs:
           npx cap sync android
           chmod +x android/gradlew
       - name: Configure release signing (when secrets are available)
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        if: env.HAS_RELEASE_SIGNING == 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -66,9 +68,16 @@ jobs:
                   }
               }
           """
-          s = s.replace("    buildTypes {", signing + "\n    buildTypes {", 1)
-          s = s.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
-          p.write_text(s)
+          marker = "    buildTypes {"
+          if marker not in s:
+              raise SystemExit("Nao foi encontrado o bloco buildTypes em android/app/build.gradle")
+          if "signingConfigs {" not in s:
+              s = s.replace(marker, signing + "\n" + marker, 1)
+          start = s.find(marker)
+          before, after = s[:start], s[start:]
+          if "signingConfig signingConfigs.release" not in after:
+              after = after.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
+          p.write_text(before + after)
           PY
       - name: Build test APK
         run: cd android && ./gradlew assembleDebug --no-daemon
