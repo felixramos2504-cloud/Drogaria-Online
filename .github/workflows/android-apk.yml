@@ -61,13 +61,13 @@ jobs:
               raise SystemExit("VERSION_CODE precisa ser maior que zero")
 
           content, code_count = re.subn(
-              r"(?m)^(\\s*)versionCode\\s+\\d+\\s*$",
+              r"(?m)^(\s*)versionCode\s+\d+\s*$",
               lambda match: f"{match.group(1)}versionCode {version_code}",
               content,
               count=1,
           )
           content, name_count = re.subn(
-              r"""(?m)^(\\s*)versionName\\s+(['"])[^'"]*\\2\\s*$""",
+              r"""(?m)^(\s*)versionName\s+(['"])[^'"]*\2\s*$""",
               lambda match: f'{match.group(1)}versionName "1.0.{version_code}"',
               content,
               count=1,
