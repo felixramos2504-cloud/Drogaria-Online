@@ -66,8 +66,8 @@ jobs:
                   }
               }
           """
-          s = s.replace("    buildTypes {", signing + "\\n    buildTypes {", 1)
-          s = s.replace("        release {", "        release {\\n            signingConfig signingConfigs.release", 1)
+          s = s.replace("    buildTypes {", signing + "\n    buildTypes {", 1)
+          s = s.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
           p.write_text(s)
           PY
       - name: Build test APK
