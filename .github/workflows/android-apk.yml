@@ -43,8 +43,49 @@ jobs:
           npx capacitor-assets generate --android --iconBackgroundColor '#087e68' --splashBackgroundColor '#edf6f1'
           npx cap sync android
           chmod +x android/gradlew
+      - name: Configure release signing (when secrets are available)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/drogaria-release.jks
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file("drogaria-release.jks")
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+          """
+          s = s.replace("    buildTypes {", signing + "\\n    buildTypes {", 1)
+          s = s.replace("        release {", "        release {\\n            signingConfig signingConfigs.release", 1)
+          p.write_text(s)
+          PY
       - name: Build test APK
         run: cd android && ./gradlew assembleDebug --no-daemon
+      - name: Build signed release APK
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: cd android && ./gradlew assembleRelease --no-daemon
+      - name: Upload signed release APK
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Drogaria-Online-Android-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
