@@ -91,7 +91,12 @@ function doPost(e) {
       default:
         return respostaApiD_({ ok: false, error: 'Método não autorizado pela API do aplicativo.' });
     }
-    return respostaApiD_(resultado);
+    // As funções do sistema já retornam o envelope {ok,data} ou {ok:false,error}.
+    // Devolver esse envelope diretamente evita respostas duplamente aninhadas no APK.
+    if (resultado && typeof resultado === 'object' && typeof resultado.ok === 'boolean') {
+      return respostaApiD_(resultado);
+    }
+    return respostaApiD_({ ok: true, data: resultado });
   } catch (err) {
     return respostaApiD_({ ok: false, error: String(err && err.message || err) });
   }
