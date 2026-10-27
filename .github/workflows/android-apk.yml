@@ -45,6 +45,40 @@ jobs:
           npx capacitor-assets generate --android --iconBackgroundColor '#087e68' --splashBackgroundColor '#edf6f1'
           npx cap sync android
           chmod +x android/gradlew
+      - name: Set Android version for future updates
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("android/app/build.gradle")
+          content = path.read_text()
+          version_code = int(os.environ["VERSION_CODE"])
+          if version_code < 1:
+              raise SystemExit("VERSION_CODE precisa ser maior que zero")
+
+          content, code_count = re.subn(
+              r"(?m)^(\\s*)versionCode\\s+\\d+\\s*$",
+              lambda match: f"{match.group(1)}versionCode {version_code}",
+              content,
+              count=1,
+          )
+          content, name_count = re.subn(
+              r"""(?m)^(\\s*)versionName\\s+(['"])[^'"]*\\2\\s*$""",
+              lambda match: f'{match.group(1)}versionName "1.0.{version_code}"',
+              content,
+              count=1,
+          )
+          if code_count != 1 or name_count != 1:
+              raise SystemExit(
+                  f"Nao foi possivel definir a versao Android (versionCode={code_count}, versionName={name_count})"
+              )
+          path.write_text(content)
+          print(f"Versao Android configurada: versionCode={version_code}, versionName=1.0.{version_code}")
+          PY
       - name: Configure release signing (when secrets are available)
         if: env.HAS_RELEASE_SIGNING == 'true'
         env:
