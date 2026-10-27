@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'package.json'
+      - 'config.js'
+      - 'firebase-config.js'
+      - 'apps-script/**'
       - 'capacitor.config.json'
       - 'www/**'
       - '.github/workflows/android-apk.yml'
@@ -29,7 +32,9 @@ jobs:
       - name: Prepare native app icon and splash
         run: |
           python -m pip install --quiet Pillow
-          mkdir -p assets
+          mkdir -p assets www
+          cp config.js www/config.js
+          cp firebase-config.js www/firebase-config.js
           cp icon-512.png assets/icon.png
           python - <<'PY'
           from PIL import Image, ImageDraw

@@ -2,15 +2,6 @@
   "appId": "br.com.drogariaonline.app",
   "appName": "Drogaria Online",
   "webDir": "www",
-  "server": {
-    "url": "https://felixramos2504-cloud.github.io/Drogaria-Online/",
-    "cleartext": false,
-    "allowNavigation": [
-      "script.google.com",
-      "*.googleusercontent.com"
-    ]
-  },
-  "android": {
-    "allowMixedContent": false
-  }
+  "android": { "allowMixedContent": false },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
 }
