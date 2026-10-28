@@ -11,6 +11,40 @@ main{max-width:1200px;margin:0 auto;padding:26px 24px}.hero{background:linear-gr
 @media(max-width:720px){body{padding-bottom:87px}.utility-bar{padding:7px 12px;font-size:11px}.header-inner{padding:12px 15px;display:grid;grid-template-columns:1fr auto;gap:11px}.brand{min-width:0}.brand-mark{height:40px;width:40px;border-radius:13px}.brand-name{font-size:17px}.brand-tag{font-size:10px}.header-search{grid-column:1/-1;grid-row:2;max-width:none}.header-search input{height:43px}.header-actions .desktop-label{display:none}.header-actions .icon-button{height:40px;min-width:40px;padding:0 9px}main{padding:16px 14px}.hero{display:block;min-height:unset;padding:24px 22px;border-radius:22px}.hero h1{font-size:32px;max-width:420px}.hero p{font-size:13px}.hero-points{display:none}.hero-tag{margin-top:15px}.section-heading{margin:25px 0 13px}.section-heading h2{font-size:22px}.section-heading p{font-size:12px}.catalog-tools{padding:11px;display:flex;gap:10px}.toolbar-label{font-size:12px}.catalog-tools select{width:auto;min-width:155px;flex:1}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.product{padding:8px;border-radius:16px}.photo{height:125px;border-radius:11px;margin-bottom:10px}.product>b{font-size:13px;min-height:35px}.product .price{font-size:19px;margin:10px 0}.product button{font-size:12px;padding:10px 8px}.panel{padding:17px;border-radius:18px}.panel h2{font-size:22px}.cart-layout,.account-grid{grid-template-columns:1fr}.summary-card{order:-1}.footer{padding:18px 15px 20px;display:block}.footer-links{margin-top:10px;gap:16px}.mobile-nav{position:fixed;left:10px;right:10px;bottom:9px;z-index:30;display:grid;grid-template-columns:repeat(3,1fr);padding:7px;background:#fffffff2;backdrop-filter:blur(16px);border:1px solid #dce9e2;border-radius:20px;box-shadow:0 12px 38px #16473528}.mobile-nav button{position:relative;border:0;background:transparent;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;color:#71857d;padding:7px 3px;font-size:10px;font-weight:750}.mobile-nav button .nav-icon{font-size:21px;line-height:1.1}.mobile-nav button.active{background:#e5f5ed;color:#08644f}.mobile-nav .nav-count{position:absolute;top:2px;right:calc(50% - 25px);background:#087e68;color:#fff;border-radius:99px;font-size:9px;min-width:16px;padding:1px 4px}.empty-state{padding:30px 15px}.empty-state h3{font-size:19px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .password-row{display:flex;align-items:stretch;gap:8px;margin-bottom:12px}.password-row input{flex:1;min-width:0;margin:0}.password-toggle{width:auto;min-width:88px;margin:0;padding:10px 12px}@media(max-width:520px){.password-toggle{min-width:72px;padding:9px 10px}}
+
+/* MASTER 2.6 hotfix: force balanced columns for password/code inputs and show buttons */
+.account-grid .password-row{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) 96px !important;
+  align-items:stretch;
+  gap:8px;
+  width:100%;
+}
+.account-grid .password-row > input{
+  display:block;
+  box-sizing:border-box;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100%;
+  flex:none !important;
+  grid-column:1;
+}
+.account-grid .password-row > button.password-toggle{
+  display:inline-flex;
+  grid-column:2;
+  width:96px !important;
+  min-width:96px !important;
+  max-width:96px !important;
+  flex:none !important;
+  margin:0;
+  padding:10px 8px;
+  white-space:nowrap;
+}
+@media(max-width:520px){
+  .account-grid .password-row{grid-template-columns:minmax(0,1fr) 82px !important}
+  .account-grid .password-row > button.password-toggle{width:82px !important;min-width:82px !important;max-width:82px !important;padding:9px 5px}
+}
+
 </style></head><body><div class="utility-bar">Drogaria Online · Produtos de cuidado e bem-estar</div>
 <header class="site-header"><div class="header-inner"><a class="brand" href="#" onclick="show('catalog');return false" aria-label="Drogaria Online — início"><span class="brand-mark">✚</span><span><span class="brand-name">Drogaria Online</span><span class="brand-tag">Seu cuidado, mais perto.</span></span></a><div class="header-search"><span class="search-icon">⌕</span><input id="search" aria-label="Buscar produto" placeholder="Buscar por nome ou produto..." oninput="drawCatalog()"></div><div class="header-actions"><button class="icon-button" onclick="show('cart')" aria-label="Abrir carrinho"><span>🛒</span><span class="desktop-label">Carrinho</span><span class="count-badge" id="topCount">0</span></button><button class="icon-button" onclick="account()" aria-label="Minha conta"><span>♙</span><span class="desktop-label">Minha conta</span></button></div></div></header>
 <main><div id="message" class="msg hidden" role="status" aria-live="polite"></div>
