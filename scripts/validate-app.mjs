@@ -145,7 +145,11 @@ assert(/CODIGO_GERADO/.test(backend) && /shaD_\(codigo\)/.test(backend), 'Códig
 assert(/function recoverWithoutCurrentPassword/.test(storefront), 'Conta conectada oferece recuperação sem senha antiga');
 assert(/\.account-grid \.password-row\{[\s\S]{0,100}display:grid !important/.test(storefront), 'Campos de recuperação usam layout de grade responsivo');
 assert(/\.account-grid \.password-row > button\.password-toggle/.test(storefront), 'Botões Mostrar têm largura fixa sem esmagar o campo');
-console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.6');
+assert(/function meusPedidosDrogaria[\s\S]{0,1400}itens:porPedido/.test(backend), 'Histórico do cliente inclui itens do pedido');
+assert(/function painelDrogaria[\s\S]{0,1800}itens:porPedido/.test(backend), 'Painel administrativo recebe itens de cada pedido');
+assert(/Itens para separar:/.test(admin), 'Painel mostra produtos, quantidades, SKUs e subtotais para separar');
+assert(/<b>Produtos:<\/b>/.test(storefront), 'Cliente consegue conferir produtos e quantidades nos pedidos');
+console.log('\\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.7');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
   for (const item of fail) console.error('FALHA  ' + item);
