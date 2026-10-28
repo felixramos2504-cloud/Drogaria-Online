@@ -223,15 +223,26 @@ function concluirRecuperacaoSenhaDrogaria(telefone,codigo,novaSenha,confirmacao)
         reqSh.getRange(req.n,4).setValue('EXPIRADO');
         throw Error('O código expirou. Solicite uma nova recuperação.');
       }
-      if(shaD_(codigo)!==String(req.r[6]||''))throw Error('Telefone ou código incorretos.');
+      checkLoginGuardD_('RECOVERY',telefone);
+      if(shaD_(codigo)!==String(req.r[6]||'')){
+        recordLoginFailureD_('RECOVERY',telefone);
+        throw Error('Telefone ou código incorretos.');
+      }
+      clearLoginFailuresD_('RECOVERY',telefone);
       const clients=shD_(DRG.users);
       const cliente=rowsD_(clients).find(x=>String(x.r[0])===String(req.r[8])&&String(x.r[2])===telefone);
       if(!cliente)throw Error('Não encontrei o cadastro associado. Peça ajuda à equipe.');
       const salt=randD_(),version=randD_();
       clients.getRange(cliente.n,4,1,2).setValues([[salt,shaD_(salt+novaSenha)]]);
       putD_('PASSVER_'+String(cliente.r[0]),version);
+      rowsD_(reqSh).forEach(other=>{
+        if(other.n!==req.n&&String(other.r[1])===telefone&&String(other.r[3])==='CODIGO_GERADO'){
+          reqSh.getRange(other.n,4,1,6).setValues([['REVOGADO',new Date(),'RECUPERACAO_NOVA','','','']]);
+        }
+      });
       reqSh.getRange(req.n,4,1,6).setValues([['RESOLVIDO',new Date(),'CLIENTE_RECUPERACAO','','','']]);
       clearLoginFailuresD_('CLIENTE',telefone);
+      clearLoginFailuresD_('RECOVERY',telefone);
       shD_(DRG.audit).appendRow([new Date(),'RECUPERACAO_SENHA_CONCLUIDA',String(req.r[0]),'Senha definida pelo cliente após validação de código']);
       return {mensagem:'Senha redefinida. Agora entre usando a nova senha.'};
     }finally{lock.releaseLock()}
@@ -306,6 +317,12 @@ function redefinirSenhaClienteDrogaria(token,id){
         shD_(DRG.audit).appendRow([new Date(),'RECUPERACAO_SEM_CADASTRO',id,'Não existe cliente com este telefone']);
         return {status:'SEM_CADASTRO',telefone};
       }
+      rowsD_(reqSh).forEach(other=>{
+        if(other.n!==req.n&&String(other.r[1])===telefone&&String(other.r[3])==='CODIGO_GERADO'){
+          reqSh.getRange(other.n,4,1,6).setValues([['REVOGADO',new Date(),by.email,'','','']]);
+        }
+      });
+      clearLoginFailuresD_('RECOVERY',telefone);
       const codigoRecuperacao=randD_().slice(0,12).toUpperCase();
       const expira=Date.now()+15*60*1000;
       reqSh.getRange(req.n,4,1,6).setValues([['CODIGO_GERADO',new Date(),by.email,shaD_(codigoRecuperacao),expira,String(cliente.r[0])]]);
