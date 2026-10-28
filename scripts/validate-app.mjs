@@ -129,7 +129,14 @@ try {
   fail.push('Teste funcional do limitador de login falhou: ' + String(err && err.message || err));
 }
 
-console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.3');
+assert(/id="forgotPanel"/.test(storefront) && /Esqueci minha senha/.test(storefront), 'Loja mostra acesso à recuperação de senha');
+assert(/function solicitarRecuperacaoSenhaDrogaria/.test(backend), 'Backend registra pedidos de recuperação de senha');
+assert(/function listarRecuperacoesSenhaDrogaria/.test(backend) && /function redefinirSenhaClienteDrogaria/.test(backend), 'Painel administrativo pode listar e concluir recuperações');
+assert(/function alterarSenhaDrogaria/.test(backend) && /function changePassword/.test(storefront), 'Cliente pode alterar senha após entrar');
+assert(/solicitarRecuperacaoSenhaDrogaria/.test(bridge) && /alterarSenhaDrogaria/.test(bridge), 'Ponte Android permite os novos métodos de senha');
+assert(/data-tab="recuperacao"/.test(admin) && /function resetRecovery/.test(admin), 'Painel tem área de recuperação protegida');
+
+console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.4');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
   for (const item of fail) console.error('FALHA  ' + item);
