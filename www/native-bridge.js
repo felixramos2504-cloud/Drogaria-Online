@@ -8,7 +8,7 @@
   const allowed = new Set([
     'catalogoDrogaria', 'criarContaDrogaria', 'loginDrogaria',
     'minhaContaDrogaria', 'sairDrogaria', 'pedidoDrogaria', 'meusPedidosDrogaria',
-    'solicitarRecuperacaoSenhaDrogaria', 'alterarSenhaDrogaria'
+    'solicitarRecuperacaoSenhaDrogaria', 'concluirRecuperacaoSenhaDrogaria', 'alterarSenhaDrogaria'
   ]);
   const endpointValido = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec\/?$/.test(endpoint);
   function runner(successHandler, failureHandler) {
