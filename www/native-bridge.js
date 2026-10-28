@@ -1,4 +1,4 @@
-/* Drogaria Online MASTER 2.0 — ponte do frontend local para a API Apps Script.
+/* Drogaria Online MASTER 2.6 — ponte do frontend local para a API Apps Script.
  * Em Apps Script HTML Service, google.script.run já existe e não é substituído.
  * No APK Capacitor, chamadas permitidas usam CapacitorHttp/fetch nativo.
  */
