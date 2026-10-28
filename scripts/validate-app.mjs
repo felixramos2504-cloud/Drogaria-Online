@@ -87,3 +87,8 @@ if (fail.length) {
   process.exit(1);
 }
 console.log('\nResultado: ' + pass.length + ' verificações concluídas sem falhas.');
+
+assert(/function loginGuardKeyD_/.test(backend), 'Chave de limite de tentativas de login presente');
+assert(/function checkLoginGuardD_/.test(backend) && /function recordLoginFailureD_/.test(backend), 'Bloqueio temporário de tentativas repetidas presente');
+assert(/checkLoginGuardD_\('CLIENTE',telefone\)/.test(backend) && /checkLoginGuardD_\('ADMIN',email\)/.test(backend), 'Proteção aplicada ao login de clientes e administradores');
+assert(/const lock=LockService\.getScriptLock\(\);lock\.waitLock\(25000\)/.test(backend), 'Cadastro de cliente protegido contra duplicidade concorrente');
