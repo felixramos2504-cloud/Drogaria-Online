@@ -107,20 +107,23 @@ const gasContext = {
 try {
   vm.createContext(gasContext);
   new vm.Script(backend, { filename: 'apps-script/Code.gs (teste)' }).runInContext(gasContext);
-  const limitWorks = vm.runInContext(\`(() => {
-    for (let i = 0; i < 7; i++) recordLoginFailureD_('CLIENTE', '11999999999');
-    checkLoginGuardD_('CLIENTE', '11999999999');
-    recordLoginFailureD_('CLIENTE', '11999999999');
-    let blocked = false;
-    try { checkLoginGuardD_('CLIENTE', '11999999999'); }
-    catch (e) { blocked = /Muitas tentativas/.test(String(e.message)); }
-    if (!blocked) return false;
-    clearLoginFailuresD_('CLIENTE', '11999999999');
-    checkLoginGuardD_('CLIENTE', '11999999999');
-    checkLoginGuardD_('CLIENTE', '11888888888');
-    checkLoginGuardD_('ADMIN', 'admin@exemplo.com');
-    return true;
-  })()\`, gasContext);
+  const guardTestSource = [
+    "(() => {",
+    "  for (let i = 0; i < 7; i++) recordLoginFailureD_('CLIENTE', '11999999999');",
+    "  checkLoginGuardD_('CLIENTE', '11999999999');",
+    "  recordLoginFailureD_('CLIENTE', '11999999999');",
+    "  let blocked = false;",
+    "  try { checkLoginGuardD_('CLIENTE', '11999999999'); }",
+    "  catch (e) { blocked = /Muitas tentativas/.test(String(e.message)); }",
+    "  if (!blocked) return false;",
+    "  clearLoginFailuresD_('CLIENTE', '11999999999');",
+    "  checkLoginGuardD_('CLIENTE', '11999999999');",
+    "  checkLoginGuardD_('CLIENTE', '11888888888');",
+    "  checkLoginGuardD_('ADMIN', 'admin@exemplo.com');",
+    "  return true;",
+    "})()"
+  ].join('\n');
+  const limitWorks = vm.runInContext(guardTestSource, gasContext);
   assert(limitWorks, 'Teste funcional: bloqueia a 8.ª falha, permite 7 e limpa após login correto');
 } catch (err) {
   fail.push('Teste funcional do limitador de login falhou: ' + String(err && err.message || err));
