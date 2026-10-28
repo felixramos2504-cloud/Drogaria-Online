@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -83,6 +84,47 @@ assert(/function loginGuardKeyD_/.test(backend), 'Chave de limite de tentativas 
 assert(/function checkLoginGuardD_/.test(backend) && /function recordLoginFailureD_/.test(backend), 'Bloqueio temporário de tentativas repetidas presente');
 assert(/checkLoginGuardD_\('CLIENTE',telefone\)/.test(backend) && /checkLoginGuardD_\('ADMIN',email\)/.test(backend), 'Proteção aplicada ao login de clientes e administradores');
 assert(/const lock=LockService\.getScriptLock\(\);lock\.waitLock\(25000\)/.test(backend), 'Cadastro de cliente protegido contra duplicidade concorrente');
+
+
+// Teste comportamental do limitador, com serviços do Apps Script simulados.
+const cacheStore = new Map();
+const mockCache = {
+  get(key) { return cacheStore.has(key) ? cacheStore.get(key) : null; },
+  put(key, value) { cacheStore.set(key, String(value)); },
+  remove(key) { cacheStore.delete(key); },
+};
+const gasContext = {
+  Utilities: {
+    DigestAlgorithm: { SHA_256: 'SHA_256' },
+    computeDigest(_algorithm, value) {
+      return Array.from(createHash('sha256').update(String(value)).digest())
+        .map((byte) => byte > 127 ? byte - 256 : byte);
+    },
+  },
+  CacheService: { getScriptCache: () => mockCache },
+  LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+};
+try {
+  vm.createContext(gasContext);
+  new vm.Script(backend, { filename: 'apps-script/Code.gs (teste)' }).runInContext(gasContext);
+  const limitWorks = vm.runInContext(\`(() => {
+    for (let i = 0; i < 7; i++) recordLoginFailureD_('CLIENTE', '11999999999');
+    checkLoginGuardD_('CLIENTE', '11999999999');
+    recordLoginFailureD_('CLIENTE', '11999999999');
+    let blocked = false;
+    try { checkLoginGuardD_('CLIENTE', '11999999999'); }
+    catch (e) { blocked = /Muitas tentativas/.test(String(e.message)); }
+    if (!blocked) return false;
+    clearLoginFailuresD_('CLIENTE', '11999999999');
+    checkLoginGuardD_('CLIENTE', '11999999999');
+    checkLoginGuardD_('CLIENTE', '11888888888');
+    checkLoginGuardD_('ADMIN', 'admin@exemplo.com');
+    return true;
+  })()\`, gasContext);
+  assert(limitWorks, 'Teste funcional: bloqueia a 8.ª falha, permite 7 e limpa após login correto');
+} catch (err) {
+  fail.push('Teste funcional do limitador de login falhou: ' + String(err && err.message || err));
+}
 
 console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.3');
 for (const item of pass) console.log('OK  ' + item);
