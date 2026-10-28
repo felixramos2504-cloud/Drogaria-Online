@@ -198,9 +198,15 @@ function solicitarRecuperacaoSenhaDrogaria(telefone){
     const cache=CacheService.getScriptCache(),cacheKey=DRG.prefix+'RECOVERY_REQUEST_'+shaD_(telefone).slice(0,40);
     const lock=LockService.getScriptLock();lock.waitLock(15000);
     try{
-      if(cache.get(cacheKey))return {mensagem};
+      const sh=recoveryShD_(),requests=rowsD_(sh).filter(x=>String(x.r[1])===telefone);
+      const pending=requests.some(x=>String(x.r[3])==='PENDENTE');
+      const activeCode=requests.some(x=>String(x.r[3])==='CODIGO_GERADO'&&Number(x.r[7]||0)>Date.now());
+      if(pending||activeCode){cache.put(cacheKey,'1',600);return {mensagem};}
+      // Se a solicitação anterior já foi resolvida/expirou, não deixe o anti-repetição
+      // impedir uma nova solicitação legítima.
+      if(cache.get(cacheKey))cache.remove(cacheKey);
       const id='REC-'+randD_().slice(0,12).toUpperCase();
-      recoveryShD_().appendRow([id,telefone,new Date(),'PENDENTE','','']);
+      sh.appendRow([id,telefone,new Date(),'PENDENTE','','','','','']);
       cache.put(cacheKey,'1',600);
       shD_(DRG.audit).appendRow([new Date(),'SOLICITACAO_RECUPERACAO_SENHA',id,'Solicitação recebida']);
       return {mensagem};
