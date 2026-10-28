@@ -136,7 +136,10 @@ assert(/function alterarSenhaDrogaria/.test(backend) && /function changePassword
 assert(/solicitarRecuperacaoSenhaDrogaria/.test(bridge) && /alterarSenhaDrogaria/.test(bridge), 'Ponte Android permite os novos métodos de senha');
 assert(/data-tab="recuperacao"/.test(admin) && /function resetRecovery/.test(admin), 'Painel tem área de recuperação protegida');
 
-console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.4');
+assert(/id="confirmNewPassword"/.test(storefront), 'Alteração de senha exige confirmação da nova senha');
+assert(/function togglePasswordField/.test(storefront) && /function checkPasswordChangeFields/.test(storefront), 'Tela oferece visualização e validação antes de enviar a nova senha');
+assert(/autocomplete="off" data-lpignore="true"/.test(storefront), 'Campo da senha atual reduz preenchimento automático indevido');
+console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.5');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
   for (const item of fail) console.error('FALHA  ' + item);
