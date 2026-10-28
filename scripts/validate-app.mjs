@@ -143,6 +143,8 @@ assert(/function concluirRecuperacaoSenhaDrogaria/.test(backend), 'Recuperação
 assert(/concluirRecuperacaoSenhaDrogaria/.test(storefront) && /concluirRecuperacaoSenhaDrogaria/.test(bridge), 'Tela e ponte Android permitem conclusão por código');
 assert(/CODIGO_GERADO/.test(backend) && /shaD_\(codigo\)/.test(backend), 'Código temporário tem validade e é armazenado como hash');
 assert(/function recoverWithoutCurrentPassword/.test(storefront), 'Conta conectada oferece recuperação sem senha antiga');
+assert(/\.account-grid \.password-row\{[\s\S]{0,100}display:grid !important/.test(storefront), 'Campos de recuperação usam layout de grade responsivo');
+assert(/\.account-grid \.password-row > button\.password-toggle/.test(storefront), 'Botões Mostrar têm largura fixa sem esmagar o campo');
 console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.6');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
