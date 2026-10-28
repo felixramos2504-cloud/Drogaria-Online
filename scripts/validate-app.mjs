@@ -139,7 +139,10 @@ assert(/data-tab="recuperacao"/.test(admin) && /function resetRecovery/.test(adm
 assert(/id="confirmNewPassword"/.test(storefront), 'Alteração de senha exige confirmação da nova senha');
 assert(/function togglePasswordField/.test(storefront) && /function checkPasswordChangeFields/.test(storefront), 'Tela oferece visualização e validação antes de enviar a nova senha');
 assert(/autocomplete="off" data-lpignore="true"/.test(storefront), 'Campo da senha atual reduz preenchimento automático indevido');
-console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.5');
+assert(/function concluirRecuperacaoSenhaDrogaria/.test(backend), 'Recuperação redefine senha sem exigir senha antiga');
+assert(/concluirRecuperacaoSenhaDrogaria/.test(storefront) && /concluirRecuperacaoSenhaDrogaria/.test(bridge), 'Tela e ponte Android permitem conclusão por código');
+assert(/CODIGO_GERADO/.test(backend) && /shaD_\(codigo\)/.test(backend), 'Código temporário tem validade e é armazenado como hash');
+console.log('\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.6');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
   for (const item of fail) console.error('FALHA  ' + item);
