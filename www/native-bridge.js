@@ -7,7 +7,8 @@
   const endpoint = String(window.DROGARIA_APP_URL || '').trim();
   const allowed = new Set([
     'catalogoDrogaria', 'criarContaDrogaria', 'loginDrogaria',
-    'minhaContaDrogaria', 'sairDrogaria', 'pedidoDrogaria', 'meusPedidosDrogaria'
+    'minhaContaDrogaria', 'sairDrogaria', 'pedidoDrogaria', 'meusPedidosDrogaria',
+    'solicitarRecuperacaoSenhaDrogaria', 'alterarSenhaDrogaria'
   ]);
   const endpointValido = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec\/?$/.test(endpoint);
   function runner(successHandler, failureHandler) {
