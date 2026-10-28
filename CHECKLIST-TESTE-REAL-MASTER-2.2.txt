@@ -1,0 +1,43 @@
+DROGARIA ONLINE — MASTER 2.2
+CHECKLIST MANUAL DE ACEITAÇÃO
+=================================
+
+1. CATÁLOGO
+[ ] O app abre no Android instalado e carrega o catálogo real.
+[ ] Nenhum item demonstrativo aparece como produto disponível.
+[ ] Busca, categorias, imagens, preço e estoque estão corretos.
+[ ] Produtos que exigem atendimento farmacêutico não podem entrar em um pedido comum.
+
+2. CONTA E PEDIDO
+[ ] Criar uma conta de teste com telefone próprio.
+[ ] Sair e entrar novamente.
+[ ] Endereço completo é obrigatório.
+[ ] Pedido sem itens não é enviado.
+[ ] Pedido de teste aparece no painel administrativo.
+[ ] O estoque diminui pela quantidade comprada.
+[ ] Uma repetição da mesma solicitação não cria um segundo pedido.
+[ ] O status pode avançar e o cliente consegue consultar seus pedidos.
+
+3. CANCELAMENTO E ESTOQUE
+[ ] Cancelar um pedido de teste devolve as quantidades ao estoque.
+[ ] Tentar cancelar o mesmo pedido novamente não devolve estoque outra vez.
+[ ] Pedido cancelado não pode ser reaberto alterando apenas o status.
+[ ] Conferir o histórico/auditoria do pedido e do estoque.
+
+4. ADMINISTRAÇÃO
+[ ] Login administrativo funciona.
+[ ] Usuário sem permissão não consegue administrar usuários.
+[ ] Produto pode ser cadastrado, editado, ativado e desativado.
+[ ] Pedido exibe nome, telefone, endereço, pagamento informado e total.
+[ ] No celular, textos, botões, formulários e navegação cabem na tela.
+
+5. ANTES DE VENDER AO PÚBLICO
+[ ] Substituir todos os dados demonstrativos por produtos reais e conferidos.
+[ ] Conferir preços, imagens, estoque, regras de entrega e taxa de frete.
+[ ] Publicar identificação da empresa, canais de atendimento, privacidade e condições reais.
+[ ] Validar a operação comercial e sanitária aplicável à drogaria.
+[ ] Fazer pedido ponta a ponta com a equipe responsável antes de divulgar o app.
+
+IMPORTANTE
+A aprovação do APK no GitHub Actions comprova compilação e verificações estáticas,
+não comprova operação real no celular, integração implantada ou autorização para venda.
