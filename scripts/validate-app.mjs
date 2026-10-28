@@ -124,7 +124,7 @@ try {
     "})()"
   ].join('\n');
   const limitWorks = vm.runInContext(guardTestSource, gasContext);
-  assert(limitWorks, 'Teste funcional: bloqueia a 8.ª falha, permite 7 e limpa após login correto');
+  assert(limitWorks, 'Teste funcional: bloqueia novas tentativas após 8 falhas e limpa o contador');
 } catch (err) {
   fail.push('Teste funcional do limitador de login falhou: ' + String(err && err.message || err));
 }
