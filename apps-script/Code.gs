@@ -9,7 +9,12 @@ function putD_(k,v){PropertiesService.getScriptProperties().setProperty(DRG.pref
 function dbD_(){let id=propD_('SHEET_ID');if(!id)throw Error('Execute instalarDrogaria() antes de publicar.');return SpreadsheetApp.openById(id)}
 function shD_(name){return dbD_().getSheetByName(name)}
 function rowsD_(sh){const a=sh.getDataRange().getValues();return a.slice(1).map((r,i)=>({r,n:i+2}))}
-function recoveryShD_(){const ss=dbD_();let sh=ss.getSheetByName(DRG.recovery);if(!sh){sh=ss.insertSheet(DRG.recovery);sh.appendRow(['ID','TELEFONE','SOLICITADO_EM','STATUS','ATUALIZADO_EM','RESOLVIDO_POR']);sh.setFrozenRows(1)}return sh}
+function recoveryShD_(){
+  const ss=dbD_();let sh=ss.getSheetByName(DRG.recovery);
+  if(!sh){try{sh=ss.insertSheet(DRG.recovery)}catch(e){sh=ss.getSheetByName(DRG.recovery);if(!sh)throw e}}
+  if(sh.getLastRow()===0){sh.appendRow(['ID','TELEFONE','SOLICITADO_EM','STATUS','ATUALIZADO_EM','RESOLVIDO_POR']);sh.setFrozenRows(1)}
+  return sh;
+}
 function shaD_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v)).map(n=>('0'+(n&255).toString(16)).slice(-2)).join('')}
  
 // Proteção temporária contra tentativas repetidas de login.
@@ -191,9 +196,9 @@ function solicitarRecuperacaoSenhaDrogaria(telefone){
     const lock=LockService.getScriptLock();lock.waitLock(15000);
     try{
       if(cache.get(cacheKey))return {mensagem};
-      cache.put(cacheKey,'1',600);
       const id='REC-'+randD_().slice(0,12).toUpperCase();
       recoveryShD_().appendRow([id,telefone,new Date(),'PENDENTE','','']);
+      cache.put(cacheKey,'1',600);
       shD_(DRG.audit).appendRow([new Date(),'SOLICITACAO_RECUPERACAO_SENHA',id,'Solicitação recebida']);
       return {mensagem};
     }finally{lock.releaseLock()}
