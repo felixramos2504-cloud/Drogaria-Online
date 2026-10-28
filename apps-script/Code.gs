@@ -1,4 +1,4 @@
-/** DROGARIA ONLINE — MASTER 1.0 | projeto NOVO e independente
+/** DROGARIA ONLINE — BACKEND MASTER 2.3 | projeto NOVO e independente
  * Execute instalarDrogaria() UMA VEZ; depois gerarCodigoAtivacaoAdminDrogaria() e cadastre no painel.
  * Implante como app da Web, executando como você, acesso: qualquer pessoa.
  * IMPORTANTE: não copie este código para o projeto IDEAL Ofertas.
@@ -10,6 +10,35 @@ function dbD_(){let id=propD_('SHEET_ID');if(!id)throw Error('Execute instalarDr
 function shD_(name){return dbD_().getSheetByName(name)}
 function rowsD_(sh){const a=sh.getDataRange().getValues();return a.slice(1).map((r,i)=>({r,n:i+2}))}
 function shaD_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v)).map(n=>('0'+(n&255).toString(16)).slice(-2)).join('')}
+ 
+// Proteção temporária contra tentativas repetidas de login.
+// Limita cada telefone/e-mail a 8 falhas em uma janela de 15 minutos.
+function loginGuardKeyD_(role,identifier){
+  return DRG.prefix+'LOGINFAIL_'+role+'_'+shaD_(String(identifier||'').trim().toLowerCase()).slice(0,40);
+}
+function checkLoginGuardD_(role,identifier){
+  const cache=CacheService.getScriptCache(),key=loginGuardKeyD_(role,identifier),raw=cache.get(key);
+  if(!raw)return;
+  let state;
+  try{state=JSON.parse(raw)}catch(e){cache.remove(key);return}
+  if(Number(state.until||0)<=Date.now()){cache.remove(key);return}
+  if(Number(state.count||0)>=8)throw Error('Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente.');
+}
+function recordLoginFailureD_(role,identifier){
+  const cache=CacheService.getScriptCache(),key=loginGuardKeyD_(role,identifier),lock=LockService.getScriptLock();
+  lock.waitLock(5000);
+  try{
+    const now=Date.now();let state;
+    try{state=JSON.parse(cache.get(key)||'null')}catch(e){state=null}
+    if(!state||Number(state.until||0)<=now)state={count:0,until:now+15*60*1000};
+    state.count=Number(state.count||0)+1;
+    cache.put(key,JSON.stringify(state),900);
+    return state.count;
+  }finally{lock.releaseLock()}
+}
+function clearLoginFailuresD_(role,identifier){
+  CacheService.getScriptCache().remove(loginGuardKeyD_(role,identifier));
+}
 function randD_(){return Utilities.getUuid().replace(/-/g,'')+Utilities.getUuid().replace(/-/g,'')}
 function cleanD_(s,max=150){return String(s==null?'':s).trim().slice(0,max)}
 function phoneD_(s){return String(s||'').replace(/\D/g,'')}
@@ -103,10 +132,38 @@ function doPost(e) {
 }
 
 function catalogoDrogaria(){return safeD_(()=>rowsD_(shD_(DRG.prod)).filter(x=>(String(x.r[7])==='1'||x.r[7]===true)&&!/^item demonstrativo$/i.test(String(x.r[3]||'').trim())&&!/item demonstrativo/i.test(String(x.r[2]||''))).map(x=>({sku:String(x.r[0]),categoria:String(x.r[1]),nome:String(x.r[2]),descricao:String(x.r[3]),preco:Number(x.r[4])||0,estoque:Number(x.r[5])||0,imagem:String(x.r[6]||''),tipo:String(x.r[8]||'LIVRE')})))}
-function criarContaDrogaria(d){return safeD_(()=>{let nome=cleanD_(d.nome,100),telefone=phoneD_(d.telefone),senha=String(d.senha||'');if(nome.length<3||telefone.length<10||telefone.length>13||senha.length<8)throw Error('Informe nome, telefone válido e senha com 8 caracteres ou mais.');const sh=shD_(DRG.users);if(rowsD_(sh).some(x=>String(x.r[2])===telefone))throw Error('Telefone já cadastrado. Entre na sua conta.');let id=randD_().slice(0,20),salt=randD_();sh.appendRow([id,nome,telefone,salt,shaD_(salt+senha),new Date()]);return sessD_('C',id,{id,nome,telefone})})}
+function criarContaDrogaria(d){
+  return safeD_(()=>{
+    let nome=cleanD_(d&&d.nome,100),telefone=phoneD_(d&&d.telefone),senha=String(d&&d.senha||'');
+    if(nome.length<3||telefone.length<10||telefone.length>13||senha.length<8)
+      throw Error('Informe nome, telefone válido e senha com 8 caracteres ou mais.');
+    const lock=LockService.getScriptLock();lock.waitLock(25000);
+    try{
+      const sh=shD_(DRG.users);
+      if(rowsD_(sh).some(x=>String(x.r[2])===telefone))throw Error('Telefone já cadastrado. Entre na sua conta.');
+      const id=randD_().slice(0,20),salt=randD_();
+      sh.appendRow([id,nome,telefone,salt,shaD_(salt+senha),new Date()]);
+      clearLoginFailuresD_('CLIENTE',telefone);
+      return sessD_('C',id,{id,nome,telefone});
+    }finally{lock.releaseLock()}
+  });
+}
 function sessD_(prefix,id,payload){let token=randD_();CacheService.getScriptCache().put(DRG.prefix+prefix+token,JSON.stringify(payload),21600);return{token,...payload}}
 function authD_(token,prefix){if(!token)throw Error('Faça login novamente.');let s=CacheService.getScriptCache().get(DRG.prefix+prefix+String(token));if(!s)throw Error('Sessão expirada. Faça login novamente.');return JSON.parse(s)}
-function loginDrogaria(telefone,senha){return safeD_(()=>{telefone=phoneD_(telefone);let r=rowsD_(shD_(DRG.users)).find(x=>String(x.r[2])===telefone);if(!r||shaD_(String(r.r[3])+String(senha))!==String(r.r[4]))throw Error('Telefone ou senha incorretos.');return sessD_('C',r.r[0],{id:String(r.r[0]),nome:String(r.r[1]),telefone})})}
+function loginDrogaria(telefone,senha){
+  return safeD_(()=>{
+    telefone=phoneD_(telefone);senha=String(senha||'');
+    if(telefone.length<10||telefone.length>13||!senha)throw Error('Telefone ou senha incorretos.');
+    checkLoginGuardD_('CLIENTE',telefone);
+    const r=rowsD_(shD_(DRG.users)).find(x=>String(x.r[2])===telefone);
+    if(!r||shaD_(String(r.r[3])+senha)!==String(r.r[4])){
+      recordLoginFailureD_('CLIENTE',telefone);
+      throw Error('Telefone ou senha incorretos.');
+    }
+    clearLoginFailuresD_('CLIENTE',telefone);
+    return sessD_('C',r.r[0],{id:String(r.r[0]),nome:String(r.r[1]),telefone});
+  });
+}
 function minhaContaDrogaria(token){return safeD_(()=>authD_(token,'C'))}
 function sairDrogaria(token,role){return safeD_(()=>{CacheService.getScriptCache().remove(DRG.prefix+(role==='A'?'A':'C')+String(token));return true})}
 function pedidoDrogaria(token,d){return safeD_(()=>{const cliente=authD_(token,'C');const end=cleanD_(d.endereco,300),obs=cleanD_(d.observacoes,400),pag=cleanD_(d.pagamento,25),chave=cleanD_(d.chave,80);if(end.length<12)throw Error('Informe endereço completo de entrega.');if(!['PIX','DINHEIRO','CREDITO','DEBITO'].includes(pag))throw Error('Selecione uma forma de pagamento.');if(!chave)throw Error('Chave de pedido ausente.');if(!Array.isArray(d.itens)||!d.itens.length||d.itens.length>60)throw Error('Carrinho inválido.');const lock=LockService.getScriptLock();lock.waitLock(25000);try{
@@ -117,7 +174,27 @@ os.appendRow([id,cliente.id,cliente.nome,cliente.telefone,end,pag,total,'RECEBID
 function meusPedidosDrogaria(token){return safeD_(()=>{let u=authD_(token,'C');return rowsD_(shD_(DRG.orders)).filter(x=>String(x.r[1])===u.id).reverse().slice(0,100).map(x=>({id:String(x.r[0]),total:Number(x.r[6]),status:String(x.r[7]),data:fmtD_(x.r[8]),pagamento:String(x.r[5])}))})}
 function fmtD_(d){return d instanceof Date?Utilities.formatDate(d,Session.getScriptTimeZone(),'dd/MM/yyyy HH:mm'):String(d)}
 function ensureStaffD_(){let db=dbD_(),sh=db.getSheetByName(DRG.staff);if(!sh){sh=db.insertSheet(DRG.staff);sh.appendRow(['ID','NOME','EMAIL','SALT','HASH','PERFIL','ATIVO','CRIADO_EM']);sh.setFrozenRows(1)}return sh}
-function loginAdminDrogaria(email,senha){return safeD_(()=>{email=cleanD_(email,180).toLowerCase();senha=String(senha||'');if(email===propD_('ADMIN_EMAIL')&&propD_('ADMIN_HASH')&&shaD_(String(propD_('ADMIN_SALT'))+senha)===propD_('ADMIN_HASH'))return sessD_('A',email,{email,perfil:'PRINCIPAL',nome:'Administrador principal'});let user=rowsD_(ensureStaffD_()).find(x=>String(x.r[2]).toLowerCase()===email);if(!user||String(user.r[6])!=='1'||shaD_(String(user.r[3])+senha)!==String(user.r[4]))throw Error('E-mail ou senha incorretos.');return sessD_('A',email,{email,nome:String(user.r[1]),perfil:String(user.r[5])})})}
+function loginAdminDrogaria(email,senha){
+  return safeD_(()=>{
+    email=cleanD_(email,180).toLowerCase();senha=String(senha||'');
+    if(!email||!senha)throw Error('E-mail ou senha incorretos.');
+    checkLoginGuardD_('ADMIN',email);
+    const principal=email===String(propD_('ADMIN_EMAIL')||'').toLowerCase()
+      &&!!propD_('ADMIN_HASH')
+      &&shaD_(String(propD_('ADMIN_SALT'))+senha)===propD_('ADMIN_HASH');
+    if(principal){
+      clearLoginFailuresD_('ADMIN',email);
+      return sessD_('A',email,{email,perfil:'PRINCIPAL',nome:'Administrador principal'});
+    }
+    const user=rowsD_(ensureStaffD_()).find(x=>String(x.r[2]).toLowerCase()===email);
+    if(!user||String(user.r[6])!=='1'||shaD_(String(user.r[3])+senha)!==String(user.r[4])){
+      recordLoginFailureD_('ADMIN',email);
+      throw Error('E-mail ou senha incorretos.');
+    }
+    clearLoginFailuresD_('ADMIN',email);
+    return sessD_('A',email,{email,nome:String(user.r[1]),perfil:String(user.r[5])});
+  });
+}
 function adminPermD_(token,perfis){let u=authD_(token,'A');if(!perfis.includes(u.perfil))throw Error('Seu perfil não tem permissão para esta operação.');return u}
 function listarUsuariosAdminDrogaria(token){return safeD_(()=>{adminPermD_(token,['PRINCIPAL']);let users=rowsD_(ensureStaffD_()).map(x=>({id:String(x.r[0]),nome:String(x.r[1]),email:String(x.r[2]),perfil:String(x.r[5]),ativo:String(x.r[6])==='1'}));return [{id:'principal',nome:'Administrador principal',email:propD_('ADMIN_EMAIL'),perfil:'PRINCIPAL',ativo:true},...users]})}
 function cadastrarUsuarioAdminDrogaria(token,d){return safeD_(()=>{let by=adminPermD_(token,['PRINCIPAL']),nome=cleanD_(d.nome,100),email=cleanD_(d.email,180).toLowerCase(),senha=String(d.senha||''),perfil=cleanD_(d.perfil,40);if(nome.length<3||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||senha.length<10)throw Error('Informe nome, e-mail válido e senha de 10 caracteres ou mais.');if(!['GERENTE','OPERADOR'].includes(perfil))throw Error('Perfil inválido.');let sh=ensureStaffD_();if(email===propD_('ADMIN_EMAIL')||rowsD_(sh).some(x=>String(x.r[2]).toLowerCase()===email))throw Error('Este e-mail já está cadastrado.');let salt=randD_(),id=randD_().slice(0,20);sh.appendRow([id,nome,email,salt,shaD_(salt+senha),perfil,1,new Date()]);shD_(DRG.audit).appendRow([new Date(),'CADASTRO_USUARIO_ADMIN',email,'Por '+by.email+' / '+perfil]);return true})}
