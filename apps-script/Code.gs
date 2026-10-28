@@ -1,4 +1,4 @@
-/** DROGARIA ONLINE — BACKEND MASTER 2.4 | projeto NOVO e independente
+/** DROGARIA ONLINE — BACKEND MASTER 2.6 | projeto NOVO e independente
  * Execute instalarDrogaria() UMA VEZ; depois gerarCodigoAtivacaoAdminDrogaria() e cadastre no painel.
  * Implante como app da Web, executando como você, acesso: qualquer pessoa.
  * IMPORTANTE: não copie este código para o projeto IDEAL Ofertas.
@@ -12,7 +12,9 @@ function rowsD_(sh){const a=sh.getDataRange().getValues();return a.slice(1).map(
 function recoveryShD_(){
   const ss=dbD_();let sh=ss.getSheetByName(DRG.recovery);
   if(!sh){try{sh=ss.insertSheet(DRG.recovery)}catch(e){sh=ss.getSheetByName(DRG.recovery);if(!sh)throw e}}
-  if(sh.getLastRow()===0){sh.appendRow(['ID','TELEFONE','SOLICITADO_EM','STATUS','ATUALIZADO_EM','RESOLVIDO_POR']);sh.setFrozenRows(1)}
+  const headers=['ID','TELEFONE','SOLICITADO_EM','STATUS','ATUALIZADO_EM','RESOLVIDO_POR','CODIGO_HASH','CODIGO_EXPIRA','CLIENTE_ID'];
+  if(sh.getLastRow()===0){sh.appendRow(headers);sh.setFrozenRows(1)}
+  else if(sh.getLastColumn()<headers.length){sh.getRange(1,1,1,headers.length).setValues([headers]);sh.setFrozenRows(1)}
   return sh;
 }
 function shaD_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v)).map(n=>('0'+(n&255).toString(16)).slice(-2)).join('')}
@@ -120,6 +122,7 @@ function doPost(e) {
       case 'criarContaDrogaria': resultado = criarContaDrogaria(args[0] || {}); break;
       case 'loginDrogaria': resultado = loginDrogaria(args[0], args[1]); break;
       case 'solicitarRecuperacaoSenhaDrogaria': resultado = solicitarRecuperacaoSenhaDrogaria(args[0]); break;
+      case 'concluirRecuperacaoSenhaDrogaria': resultado = concluirRecuperacaoSenhaDrogaria(args[0], args[1], args[2], args[3]); break;
       case 'alterarSenhaDrogaria': resultado = alterarSenhaDrogaria(args[0], args[1], args[2]); break;
       case 'minhaContaDrogaria': resultado = minhaContaDrogaria(args[0]); break;
       case 'sairDrogaria': resultado = sairDrogaria(args[0], args[1]); break;
@@ -204,6 +207,36 @@ function solicitarRecuperacaoSenhaDrogaria(telefone){
     }finally{lock.releaseLock()}
   });
 }
+function concluirRecuperacaoSenhaDrogaria(telefone,codigo,novaSenha,confirmacao){
+  return safeD_(()=>{
+    telefone=phoneD_(telefone);codigo=cleanD_(codigo,80).toUpperCase();
+    novaSenha=String(novaSenha||'');confirmacao=String(confirmacao||'');
+    if(telefone.length<10||telefone.length>13||!codigo)throw Error('Confira o telefone e o código enviado pela equipe.');
+    if(novaSenha.length<8||novaSenha.length>128)throw Error('A nova senha deve ter entre 8 e 128 caracteres.');
+    if(novaSenha!==confirmacao)throw Error('As novas senhas não coincidem.');
+    const lock=LockService.getScriptLock();lock.waitLock(25000);
+    try{
+      const reqSh=recoveryShD_();
+      const req=rowsD_(reqSh).reverse().find(x=>String(x.r[1])===telefone&&String(x.r[3])==='CODIGO_GERADO');
+      if(!req)throw Error('Não há código ativo para esse telefone. Solicite a recuperação novamente.');
+      if(Date.now()>Number(req.r[7]||0)){
+        reqSh.getRange(req.n,4).setValue('EXPIRADO');
+        throw Error('O código expirou. Solicite uma nova recuperação.');
+      }
+      if(shaD_(codigo)!==String(req.r[6]||''))throw Error('Telefone ou código incorretos.');
+      const clients=shD_(DRG.users);
+      const cliente=rowsD_(clients).find(x=>String(x.r[0])===String(req.r[8])&&String(x.r[2])===telefone);
+      if(!cliente)throw Error('Não encontrei o cadastro associado. Peça ajuda à equipe.');
+      const salt=randD_(),version=randD_();
+      clients.getRange(cliente.n,4,1,2).setValues([[salt,shaD_(salt+novaSenha)]]);
+      putD_('PASSVER_'+String(cliente.r[0]),version);
+      reqSh.getRange(req.n,4,1,6).setValues([['RESOLVIDO',new Date(),'CLIENTE_RECUPERACAO','','','']]);
+      clearLoginFailuresD_('CLIENTE',telefone);
+      shD_(DRG.audit).appendRow([new Date(),'RECUPERACAO_SENHA_CONCLUIDA',String(req.r[0]),'Senha definida pelo cliente após validação de código']);
+      return {mensagem:'Senha redefinida. Agora entre usando a nova senha.'};
+    }finally{lock.releaseLock()}
+  });
+}
 function alterarSenhaDrogaria(token,senhaAtual,novaSenha){
   return safeD_(()=>{
     const cliente=authD_(token,'C');
@@ -273,12 +306,11 @@ function redefinirSenhaClienteDrogaria(token,id){
         shD_(DRG.audit).appendRow([new Date(),'RECUPERACAO_SEM_CADASTRO',id,'Não existe cliente com este telefone']);
         return {status:'SEM_CADASTRO',telefone};
       }
-      const senhaTemporaria=randD_().slice(0,20).toUpperCase(),salt=randD_(),version=randD_();
-      clients.getRange(cliente.n,4,1,2).setValues([[salt,shaD_(salt+senhaTemporaria)]]);
-      putD_('PASSVER_'+String(cliente.r[0]),version);
-      reqSh.getRange(req.n,4,1,3).setValues([['RESOLVIDO',new Date(),by.email]]);
-      shD_(DRG.audit).appendRow([new Date(),'RECUPERACAO_SENHA_CONCLUIDA',id,'Senha temporária emitida por '+by.email]);
-      return {status:'RESOLVIDO',telefone,nome:String(cliente.r[1]),senhaTemporaria};
+      const codigoRecuperacao=randD_().slice(0,12).toUpperCase();
+      const expira=Date.now()+15*60*1000;
+      reqSh.getRange(req.n,4,1,6).setValues([['CODIGO_GERADO',new Date(),by.email,shaD_(codigoRecuperacao),expira,String(cliente.r[0])]]);
+      shD_(DRG.audit).appendRow([new Date(),'CODIGO_RECUPERACAO_GERADO',id,'Código único válido por 15 minutos; identidade verificada por '+by.email]);
+      return {status:'CODIGO_GERADO',telefone,nome:String(cliente.r[1]),codigoRecuperacao,expiraEm:'15 minutos'};
     }finally{lock.releaseLock()}
   });
 }
