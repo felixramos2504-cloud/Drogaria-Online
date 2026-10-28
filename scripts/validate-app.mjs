@@ -149,7 +149,10 @@ assert(/function meusPedidosDrogaria[\s\S]{0,1400}itens:porPedido/.test(backend)
 assert(/function painelDrogaria[\s\S]{0,1800}itens:porPedido/.test(backend), 'Painel administrativo recebe itens de cada pedido');
 assert(/Itens para separar:/.test(admin), 'Painel mostra produtos, quantidades, SKUs e subtotais para separar');
 assert(/<b>Produtos:<\/b>/.test(storefront), 'Cliente consegue conferir produtos e quantidades nos pedidos');
-console.log('\\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.7');
+assert(/id="orderSearch"/.test(admin) && /id="orderStatusFilter"/.test(admin), 'Painel de pedidos oferece busca e filtro por status');
+assert(/function renderOrders\(\)/.test(admin) && /function clearOrderFilters\(\)/.test(admin), 'Busca de pedidos atualiza e limpa os filtros');
+assert(/o\.telefone/.test(admin) && /i\.produto/.test(admin) && /i\.sku/.test(admin), 'Busca contempla cliente, telefone, produto e SKU');
+console.log('\\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.8');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
   for (const item of fail) console.error('FALHA  ' + item);
