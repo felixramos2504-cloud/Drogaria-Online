@@ -147,3 +147,7 @@ window.unlinkDrogariaPushSession = async () => {
     // A saída da conta não deve ser bloqueada por uma falha de notificação.
   }
 };
+
+window.addEventListener('load', () => {
+  if (window.syncDrogariaPushSession) window.syncDrogariaPushSession();
+});
