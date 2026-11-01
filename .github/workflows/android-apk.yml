@@ -57,10 +57,10 @@ jobs:
           if [ -n "${FIREBASE_GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
             printf '%s' "$FIREBASE_GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
             test -s android/app/google-services.json
-            printf 'window.DROGARIA_NATIVE_PUSH_ENABLED = true;\\n' > www/native-push-config.js
+            printf 'window.DROGARIA_NATIVE_PUSH_ENABLED = true;\n' > www/native-push-config.js
             echo "Firebase Android configuration enabled."
           else
-            printf 'window.DROGARIA_NATIVE_PUSH_ENABLED = false;\\n' > www/native-push-config.js
+            printf 'window.DROGARIA_NATIVE_PUSH_ENABLED = false;\n' > www/native-push-config.js
             echo "Firebase Android configuration not supplied; native push stays disabled."
           fi
           npx capacitor-assets generate --android --iconBackgroundColor '#087e68' --splashBackgroundColor '#edf6f1'
