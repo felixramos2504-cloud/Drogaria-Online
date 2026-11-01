@@ -1,0 +1,59 @@
+DROGARIA ONLINE — MASTER 3.1
+ENVIO AUTOMÁTICO DE NOTIFICAÇÕES FIREBASE (FCM HTTP v1)
+
+O QUE MUDA
+- Quando o cliente faz um pedido novo, o Apps Script envia "Pedido recebido" ao(s) aparelho(s) cadastrado(s) na conta.
+- Quando a equipe altera o pedido para RECEBIDO, EM_SEPARACAO, PRONTO, SAIU_PARA_ENTREGA, ENTREGUE ou CANCELADO, o cliente recebe a atualização.
+- O envio ocorre depois que o bloqueio do estoque é liberado. Falha de notificação não cancela nem desfaz pedido/estoque.
+- Tokens FCM inválidos são desativados na aba DISPOSITIVOS_PUSH.
+- Não foi criada Cloud Function e nenhuma chave privada de conta de serviço foi colocada no código.
+
+ETAPA A — ATUALIZAR O APPS SCRIPT
+1. Abra o projeto Google Apps Script que atende a Drogaria Online.
+2. Substitua o conteúdo de Code.gs pelo arquivo completo Code.gs-MASTER-3.1.txt.
+3. Abra Configurações do projeto.
+4. Ative "Mostrar o arquivo de manifesto appsscript.json no editor".
+5. Abra appsscript.json e substitua seu conteúdo pelo arquivo appsscript-MASTER-3.1.json.txt.
+6. Salve os dois arquivos.
+
+O manifesto inclui os escopos para planilhas, requisições externas e Firebase Messaging. O Apps Script solicitará nova autorização depois da atualização.
+
+ETAPA B — AUTORIZAR O PROPRIETÁRIO NO GOOGLE CLOUD
+1. Abra o Google Cloud Console no projeto drogaria-online:
+   https://console.cloud.google.com/iam-admin/iam?project=drogaria-online
+2. Localize a conta Google que é proprietária da implantação do Apps Script (a implantação deve executar como o proprietário / "Eu").
+3. Garanta que a API Firebase Cloud Messaging esteja habilitada:
+   https://console.cloud.google.com/apis/library/fcm.googleapis.com?project=drogaria-online
+4. Em IAM, conceda à conta proprietária o papel:
+   Firebase Cloud Messaging API Admin
+   ID do papel: roles/firebasecloudmessaging.admin
+5. Salve a permissão.
+
+Se a conta já tiver um papel de Owner no projeto Firebase/Google Cloud que inclua cloudmessaging.messages.create, essa permissão poderá já estar coberta. Não conceda papéis mais amplos desnecessariamente.
+
+ETAPA C — AUTORIZAR O MANIFESTO
+1. No Apps Script, selecione a função autorizarFirebasePushDrogaria.
+2. Clique em Executar.
+3. Revise e aceite a solicitação de permissões do Google.
+4. Não copie nem compartilhe o token OAuth exibido nos registros; o código não o registra.
+
+ETAPA D — PUBLICAR
+1. Implantar > Gerenciar implantações.
+2. Editar a implantação atual.
+3. Selecionar Nova versão e Implantar.
+4. Manter o mesmo endereço /exec e configurar "Executar como: Eu" (proprietário do script).
+5. Não é preciso mudar o endereço no GitHub se a URL da implantação permanecer a mesma.
+
+TESTE REAL
+1. Instale o APK MASTER 3.0 recém-gerado com o arquivo google-services.json.
+2. Abra o aplicativo, entre em uma conta de cliente e toque em "Ativar notificações dos pedidos".
+3. No banco, confira a aba DISPOSITIVOS_PUSH e confirme que o aparelho tem ATIVO = 1.
+4. Faça um pedido de teste com um produto real e saldo disponível. O cliente deve receber "Pedido recebido".
+5. No painel, altere o status desse pedido para EM_SEPARACAO e depois PRONTO. O cliente deve receber uma notificação para cada mudança.
+6. Faça um dos testes com o app em segundo plano e a tela bloqueada.
+
+LIMITAÇÕES DESTA ETAPA
+- As notificações automáticas são direcionadas aos aparelhos dos clientes registrados. A notificação de "novo pedido" para o aparelho do gerente/admin ainda será uma etapa separada.
+- A aba DISPOSITIVOS_PUSH contém token de dispositivo. Não compartilhe essa aba publicamente.
+- Se houver erro HTTP 403, confira IAM e se a API FCM está habilitada.
+- Se houver erro de autorização OAuth, confira o manifesto e execute autorizarFirebasePushDrogaria novamente.
