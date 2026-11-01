@@ -61,6 +61,9 @@ const packageJson = read('package.json');
 const nativeBridge = read('www/native-bridge.js');
 const pushModule = read('www/push-notifications.js');
 const pushConfig = read('www/native-push-config.js');
+const appsScriptManifest = read('appsscript-MASTER-3.1.json.txt');
+let manifestObject = null;
+try { manifestObject = JSON.parse(appsScriptManifest); } catch (error) { fail.push('Manifesto Apps Script inválido: ' + error.message); }
 
 if (backend) checkJs('apps-script/Code.gs', backend);
 if (storefront) {
@@ -160,7 +163,7 @@ assert(/function enviarPushClienteD_/.test(backend) && /ScriptApp\.getOAuthToken
 assert(/UrlFetchApp\.fetch\(endpoint/.test(backend) && /fcm\.googleapis\.com\/v1\/projects\/drogaria-online\/messages:send/.test(backend), 'Backend aponta para o endpoint oficial FCM do projeto Drogaria Online');
 assert(/function pedidoDrogaria[\s\S]{0,5000}enviarPushClienteD_/.test(backend), 'Pedido novo dispara aviso ao cliente após gravar o pedido');
 assert(/function statusPedidoDrogaria[\s\S]{0,5000}enviarPushClienteD_/.test(backend), 'Mudanças de status disparam aviso ao cliente');
-assert(/oauthScopes/.test(read('appsscript-MASTER-3.1.json.txt')) && /firebase\.messaging/.test(read('appsscript-MASTER-3.1.json.txt')), 'Manifesto documenta escopo de autorização FCM');
+assert(Array.isArray(manifestObject?.oauthScopes) && manifestObject.oauthScopes.includes('https://www.googleapis.com/auth/firebase.messaging') && manifestObject.oauthScopes.includes('https://www.googleapis.com/auth/script.external_request'), 'Manifesto JSON contém os escopos OAuth de FCM e UrlFetch');
 assert(/createChannel/.test(pushModule) && /drogaria_pedidos/.test(pushModule), 'Android cria canal de notificações de pedidos');
 
 assert(/function painelDrogaria[\s\S]{0,1800}itens:porPedido/.test(backend), 'Painel administrativo recebe itens de cada pedido');
