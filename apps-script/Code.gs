@@ -274,11 +274,66 @@ function alterarSenhaDrogaria(token,senhaAtual,novaSenha){
     }finally{lock.releaseLock()}
   });
 }
-function pedidoDrogaria(token,d){return safeD_(()=>{const cliente=authD_(token,'C');const end=cleanD_(d.endereco,300),obs=cleanD_(d.observacoes,400),pag=cleanD_(d.pagamento,25),chave=cleanD_(d.chave,80);if(end.length<12)throw Error('Informe endereço completo de entrega.');if(!['PIX','DINHEIRO','CREDITO','DEBITO'].includes(pag))throw Error('Selecione uma forma de pagamento.');if(!chave)throw Error('Chave de pedido ausente.');if(!Array.isArray(d.itens)||!d.itens.length||d.itens.length>60)throw Error('Carrinho inválido.');const lock=LockService.getScriptLock();lock.waitLock(25000);try{
-const sh=shD_(DRG.prod),os=shD_(DRG.orders),is=shD_(DRG.items);let previous=rowsD_(os).find(x=>String(x.r[9])===chave&&String(x.r[1])===cliente.id);if(previous)return{id:String(previous.r[0]),total:Number(previous.r[6]),repetido:true};let all=rowsD_(sh),seen=new Set(),items=[];d.itens.forEach(i=>{let sku=cleanD_(i.sku,60),q=Number(i.quantidade);if(seen.has(sku)||!Number.isInteger(q)||q<1||q>100)throw Error('Item ou quantidade inválida.');seen.add(sku);let p=all.find(x=>String(x.r[0])===sku);if(!p||!(String(p.r[7])==='1'||p.r[7]===true))throw Error('Produto indisponível: '+sku);if(/^item demonstrativo$/i.test(String(p.r[3]||'').trim())||/item demonstrativo/i.test(String(p.r[2]||'')))throw Error('Este produto é demonstrativo e não pode ser vendido.');if(String(p.r[8])!=='LIVRE')throw Error('Produto requer atendimento farmacêutico e não pode ser incluído neste pedido.');if(Number(p.r[5])<q)throw Error('Estoque insuficiente: '+p.r[2]);const preco=Number(p.r[4]);if(!Number.isFinite(preco)||preco<0)throw Error('Preço inválido: '+sku);items.push({p,q,preco})});let total=Math.round(items.reduce((s,i)=>s+i.q*i.preco,0)*100)/100;let id='DRG-'+Utilities.formatDate(new Date(),Session.getScriptTimeZone(),'yyyyMMdd')+'-'+Utilities.getUuid().slice(0,8).toUpperCase();
-// Registra primeiro o pedido e seus itens; decrementa os estoques dentro do lock.
-os.appendRow([id,cliente.id,cliente.nome,cliente.telefone,end,pag,total,'RECEBIDO',new Date(),chave,obs]);is.getRange(is.getLastRow()+1,1,items.length,6).setValues(items.map(x=>[id,String(x.p.r[0]),String(x.p.r[2]),x.q,x.preco,Math.round(x.preco*x.q*100)/100]));items.forEach(x=>sh.getRange(x.p.n,6).setValue(Number(x.p.r[5])-x.q));shD_(DRG.audit).appendRow([new Date(),'NOVO_PEDIDO',id,pag]);return{id,total}
-}finally{lock.releaseLock()}})}
+function pedidoDrogaria(token,d){
+ return safeD_(()=>{
+  const cliente=authD_(token,'C');
+  const end=cleanD_(d.endereco,300);
+  const obs=cleanD_(d.observacoes,400);
+  const pag=cleanD_(d.pagamento,25);
+  const chave=cleanD_(d.chave,80);
+  if(end.length<12)throw Error('Informe endereço completo de entrega.');
+  if(!['PIX','DINHEIRO','CREDITO','DEBITO'].includes(pag))throw Error('Selecione uma forma de pagamento.');
+  if(!chave)throw Error('Chave de pedido ausente.');
+  if(!Array.isArray(d.itens)||!d.itens.length||d.itens.length>60)throw Error('Carrinho inválido.');
+
+  const lock=LockService.getScriptLock();
+  lock.waitLock(25000);
+  let resultado=null;
+  let pedidoNovo=false;
+  try{
+   const sh=shD_(DRG.prod),os=shD_(DRG.orders),is=shD_(DRG.items);
+   const previous=rowsD_(os).find(x=>String(x.r[9])===chave&&String(x.r[1])===cliente.id);
+   if(previous){
+    resultado={id:String(previous.r[0]),total:Number(previous.r[6]),repetido:true};
+   }else{
+    const all=rowsD_(sh),seen=new Set(),items=[];
+    d.itens.forEach(i=>{
+     const sku=cleanD_(i.sku,60),q=Number(i.quantidade);
+     if(seen.has(sku)||!Number.isInteger(q)||q<1||q>100)throw Error('Item ou quantidade inválida.');
+     seen.add(sku);
+     const p=all.find(x=>String(x.r[0])===sku);
+     if(!p||!(String(p.r[7])==='1'||p.r[7]===true))throw Error('Produto indisponível: '+sku);
+     if(/^item demonstrativo$/i.test(String(p.r[3]||'').trim())||/item demonstrativo/i.test(String(p.r[2]||'')))throw Error('Este produto é demonstrativo e não pode ser vendido.');
+     if(String(p.r[8])!=='LIVRE')throw Error('Produto requer atendimento farmacêutico e não pode ser incluído neste pedido.');
+     if(Number(p.r[5])<q)throw Error('Estoque insuficiente: '+p.r[2]);
+     const preco=Number(p.r[4]);
+     if(!Number.isFinite(preco)||preco<0)throw Error('Preço inválido: '+sku);
+     items.push({p,q,preco});
+    });
+    const total=Math.round(items.reduce((sum,item)=>sum+item.q*item.preco,0)*100)/100;
+    const id='DRG-'+Utilities.formatDate(new Date(),Session.getScriptTimeZone(),'yyyyMMdd')+'-'+Utilities.getUuid().slice(0,8).toUpperCase();
+
+    // Grava pedido, itens e estoque dentro do bloqueio para evitar duplicidade e venda acima do saldo.
+    os.appendRow([id,cliente.id,cliente.nome,cliente.telefone,end,pag,total,'RECEBIDO',new Date(),chave,obs]);
+    is.getRange(is.getLastRow()+1,1,items.length,6).setValues(items.map(item=>[id,String(item.p.r[0]),String(item.p.r[2]),item.q,item.preco,Math.round(item.preco*item.q*100)/100]));
+    items.forEach(item=>sh.getRange(item.p.n,6).setValue(Number(item.p.r[5])-item.q));
+    shD_(DRG.audit).appendRow([new Date(),'NOVO_PEDIDO',id,pag]);
+    resultado={id,total};
+    pedidoNovo=true;
+   }
+  }finally{
+   lock.releaseLock();
+  }
+
+  // A chamada externa ao FCM acontece depois de liberar o bloqueio do estoque.
+  if(pedidoNovo){
+   enviarPushClienteD_(cliente.id,'Pedido recebido','Recebemos seu pedido '+resultado.id+'. Acompanhe as atualizações pelo aplicativo.',{
+    screen:'orders',orderId:resultado.id,status:'RECEBIDO'
+   });
+  }
+  return resultado;
+ });
+}
 function meusPedidosDrogaria(token){
  return safeD_(()=>{
   const u=authD_(token,'C');
@@ -376,35 +431,63 @@ function salvarProdutoDrogaria(token,p){return safeD_(()=>{adminPermD_(token,['P
 function statusPedidoDrogaria(token,id,status){
  return safeD_(()=>{
   adminPermD_(token,['PRINCIPAL','GERENTE','OPERADOR']);
-  id=cleanD_(id,80);status=cleanD_(status,40);
+  id=cleanD_(id,80);
+  status=cleanD_(status,40);
   if(!['RECEBIDO','EM_SEPARACAO','PRONTO','SAIU_PARA_ENTREGA','ENTREGUE','CANCELADO'].includes(status))throw Error('Status inválido.');
-  const lock=LockService.getScriptLock();lock.waitLock(25000);
+
+  const lock=LockService.getScriptLock();
+  lock.waitLock(25000);
+  let clienteId='',statusAnterior='',resultado=null,avisar=false;
   try{
    const orders=shD_(DRG.orders),itemsSh=shD_(DRG.items),productsSh=shD_(DRG.prod);
    const order=rowsD_(orders).find(x=>String(x.r[0])===id);
    if(!order)throw Error('Pedido não encontrado.');
    const current=String(order.r[7]||'');
    if(['ENTREGUE','CANCELADO'].includes(current))throw Error('Este pedido já foi finalizado.');
+   clienteId=String(order.r[1]||'');
+   statusAnterior=current;
+
    if(status==='CANCELADO'){
     const items=rowsD_(itemsSh).filter(x=>String(x.r[0])===id);
     if(!items.length)throw Error('Não encontrei os itens do pedido para devolver o estoque. O cancelamento não foi aplicado.');
     const productRows=rowsD_(productsSh);
     const returns=items.map(item=>{
-      const sku=String(item.r[1]),qty=Number(item.r[3]);
-      const product=productRows.find(p=>String(p.r[0])===sku);
-      if(!product)throw Error('Produto '+sku+' não existe mais no cadastro. Corrija o cadastro antes de cancelar.');
-      if(!Number.isInteger(qty)||qty<1)throw Error('Quantidade inválida nos itens do pedido '+id+'.');
-      return {product,qty,sku};
+     const sku=String(item.r[1]),qty=Number(item.r[3]);
+     const product=productRows.find(p=>String(p.r[0])===sku);
+     if(!product)throw Error('Produto '+sku+' não existe mais no cadastro. Corrija o cadastro antes de cancelar.');
+     if(!Number.isInteger(qty)||qty<1)throw Error('Quantidade inválida nos itens do pedido '+id+'.');
+     return {product,qty,sku};
     });
     returns.forEach(ret=>{
-      productsSh.getRange(ret.product.n,6).setValue((Number(ret.product.r[5])||0)+ret.qty);
-      shD_(DRG.audit).appendRow([new Date(),'DEVOLUCAO_ESTOQUE_CANCELAMENTO',id,ret.sku+' | quantidade '+ret.qty]);
+     productsSh.getRange(ret.product.n,6).setValue((Number(ret.product.r[5])||0)+ret.qty);
+     shD_(DRG.audit).appendRow([new Date(),'DEVOLUCAO_ESTOQUE_CANCELAMENTO',id,ret.sku+' | quantidade '+ret.qty]);
     });
    }
-   orders.getRange(order.n,8).setValue(status);
-   shD_(DRG.audit).appendRow([new Date(),'STATUS_PEDIDO',id,current+' -> '+status]);
-   return {id,status,estoqueDevolvido:status==='CANCELADO'};
-  }finally{lock.releaseLock()}
+
+   if(status!==current){
+    orders.getRange(order.n,8).setValue(status);
+    shD_(DRG.audit).appendRow([new Date(),'STATUS_PEDIDO',id,current+' -> '+status]);
+    avisar=true;
+   }
+   resultado={id,status,estoqueDevolvido:status==='CANCELADO'};
+  }finally{
+   lock.releaseLock();
+  }
+
+  if(avisar&&clienteId){
+   const mensagens={
+    RECEBIDO:'Seu pedido foi recebido pela drogaria.',
+    EM_SEPARACAO:'Seu pedido está sendo separado.',
+    PRONTO:'Seu pedido está pronto.',
+    SAIU_PARA_ENTREGA:'Seu pedido saiu para entrega.',
+    ENTREGUE:'Seu pedido foi marcado como entregue.',
+    CANCELADO:'Seu pedido foi cancelado.'
+   };
+   enviarPushClienteD_(clienteId,'Atualização do pedido '+id,mensagens[status]||'O status do seu pedido foi atualizado.',{
+    screen:'orders',orderId:id,status:status
+   });
+  }
+  return resultado;
  });
 }
 
@@ -493,4 +576,67 @@ function desvincularDispositivoDrogaria(token,tokenPush){
       return {desvinculado:true};
     }finally{lock.releaseLock()}
   });
+}
+
+
+/**
+ * Envia notificações transacionais para os aparelhos ativos de um cliente.
+ * Erros de push nunca anulam um pedido nem uma alteração de status.
+ */
+function enviarPushClienteD_(clienteId,titulo,corpo,dados){
+  try{
+    clienteId=String(clienteId||'');
+    if(!clienteId)return {enviadas:0};
+    const sh=pushDevicesShD_();
+    const dispositivos=rowsD_(sh).filter(x=>String(x.r[1])===clienteId&&String(x.r[4])==='1'&&String(x.r[2]||'').length>=80);
+    if(!dispositivos.length)return {enviadas:0};
+
+    const oauth=ScriptApp.getOAuthToken();
+    const endpoint='https://fcm.googleapis.com/v1/projects/drogaria-online/messages:send';
+    const payloadBase={
+      notification:{title:String(titulo||'Drogaria Online').slice(0,100),body:String(corpo||'Você tem uma atualização.').slice(0,240)},
+      data:{screen:String(dados&&dados.screen||'orders'),orderId:String(dados&&dados.orderId||''),status:String(dados&&dados.status||'')},
+      android:{priority:'HIGH',notification:{channel_id:'drogaria_pedidos',sound:'default'}}
+    };
+    let enviadas=0,invalidos=[];
+    dispositivos.forEach(dispositivo=>{
+      const mensagem={message:Object.assign({token:String(dispositivo.r[2])},payloadBase)};
+      const resposta=UrlFetchApp.fetch(endpoint,{
+        method:'post',
+        contentType:'application/json',
+        headers:{Authorization:'Bearer '+oauth},
+        payload:JSON.stringify(mensagem),
+        muteHttpExceptions:true
+      });
+      const codigo=resposta.getResponseCode();
+      if(codigo>=200&&codigo<300){
+        enviadas++;
+      }else{
+        const erro=resposta.getContentText()||'';
+        if(/UNREGISTERED|registration-token-not-registered/i.test(erro))invalidos.push(dispositivo.n);
+        // Não gravar tokens nem detalhes de credenciais no log de auditoria.
+      }
+    });
+    invalidos.forEach(linha=>{
+      sh.getRange(linha,5).setValue(0);
+      sh.getRange(linha,7).setValue(new Date());
+    });
+    if(enviadas)shD_(DRG.audit).appendRow([new Date(),'PUSH_ENVIADO',clienteId,'Dispositivos: '+enviadas]);
+    if(invalidos.length)shD_(DRG.audit).appendRow([new Date(),'PUSH_TOKEN_INVALIDO',clienteId,'Dispositivos desativados: '+invalidos.length]);
+    return {enviadas,invalidos:invalidos.length};
+  }catch(err){
+    try{shD_(DRG.audit).appendRow([new Date(),'PUSH_FALHA',String(clienteId||''),String(err&&err.message||err).slice(0,180)]);}catch(_){}
+    return {enviadas:0,erro:'FALHA_PUSH'};
+  }
+}
+
+/**
+ * Execute manualmente no editor do Apps Script uma única vez após atualizar o manifesto.
+ * Isso solicita ao proprietário do projeto a autorização dos escopos necessários.
+ */
+function autorizarFirebasePushDrogaria(){
+  const token=ScriptApp.getOAuthToken();
+  if(!token)throw Error('Não foi possível obter autorização OAuth do Apps Script.');
+  Logger.log('OAuth do Apps Script disponível. Não compartilhe nem registre o token.');
+  return 'Autorização OAuth solicitada/concedida. Confirme também a permissão IAM do Firebase Cloud Messaging no Google Cloud.';
 }
