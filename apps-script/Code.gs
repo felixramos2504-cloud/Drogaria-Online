@@ -128,6 +128,8 @@ function doPost(e) {
       case 'sairDrogaria': resultado = sairDrogaria(args[0], args[1]); break;
       case 'pedidoDrogaria': resultado = pedidoDrogaria(args[0], args[1] || {}); break;
       case 'meusPedidosDrogaria': resultado = meusPedidosDrogaria(args[0]); break;
+      case 'registrarDispositivoDrogaria': resultado = registrarDispositivoDrogaria(args[0], args[1], args[2]); break;
+      case 'desvincularDispositivoDrogaria': resultado = desvincularDispositivoDrogaria(args[0], args[1]); break;
       default:
         return respostaApiD_({ ok: false, error: 'Método não autorizado pela API do aplicativo.' });
     }
@@ -440,4 +442,55 @@ function recuperarAcessoAdminDrogaria() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Registro de dispositivos autorizados para notificações push. */
+function pushDevicesShD_(){
+  const db=dbD_();
+  let sh=db.getSheetByName('DISPOSITIVOS_PUSH');
+  if(!sh){
+    sh=db.insertSheet('DISPOSITIVOS_PUSH');
+    sh.appendRow(['ID','CLIENTE_ID','TOKEN_FCM','PLATAFORMA','ATIVO','CRIADO_EM','ATUALIZADO_EM']);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function registrarDispositivoDrogaria(token,tokenPush,plataforma){
+  return safeD_(()=>{
+    const cliente=authD_(token,'C');
+    tokenPush=String(tokenPush||'').trim();
+    plataforma=cleanD_(plataforma||'ANDROID',20).toUpperCase();
+    if(tokenPush.length<80||tokenPush.length>4096||!/^[A-Za-z0-9:_\-.~]+$/.test(tokenPush))throw Error('Identificador de notificações inválido.');
+    if(!['ANDROID','WEB'].includes(plataforma))throw Error('Plataforma de notificações inválida.');
+    const lock=LockService.getScriptLock();lock.waitLock(15000);
+    try{
+      const sh=pushDevicesShD_();
+      const row=rowsD_(sh).find(x=>String(x.r[2])===tokenPush);
+      if(row){
+        sh.getRange(row.n,1,1,7).setValues([[String(row.r[0]),String(cliente.id),tokenPush,plataforma,1,row.r[5]||new Date(),new Date()]]);
+      }else{
+        sh.appendRow([randD_().slice(0,20),String(cliente.id),tokenPush,plataforma,1,new Date(),new Date()]);
+      }
+      shD_(DRG.audit).appendRow([new Date(),'PUSH_DISPOSITIVO_VINCULADO',String(cliente.id),plataforma]);
+      return {registrado:true};
+    }finally{lock.releaseLock()}
+  });
+}
+function desvincularDispositivoDrogaria(token,tokenPush){
+  return safeD_(()=>{
+    const cliente=authD_(token,'C');
+    tokenPush=String(tokenPush||'').trim();
+    if(!tokenPush)return {desvinculado:true};
+    const lock=LockService.getScriptLock();lock.waitLock(15000);
+    try{
+      const sh=pushDevicesShD_();
+      const rows=rowsD_(sh).filter(x=>String(x.r[1])===String(cliente.id)&&String(x.r[2])===tokenPush&&String(x.r[4])==='1');
+      rows.forEach(row=>{
+        sh.getRange(row.n,5).setValue(0);
+        sh.getRange(row.n,7).setValue(new Date());
+      });
+      shD_(DRG.audit).appendRow([new Date(),'PUSH_DISPOSITIVO_DESVINCULADO',String(cliente.id),'ANDROID']);
+      return {desvinculado:true};
+    }finally{lock.releaseLock()}
+  });
 }
