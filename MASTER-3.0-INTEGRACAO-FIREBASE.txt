@@ -1,0 +1,54 @@
+DROGARIA ONLINE — MASTER 3.0
+INTEGRAÇÃO DE NOTIFICAÇÕES NATIVAS ANDROID (FIREBASE)
+
+O QUE ESTA VERSÃO PREPARA
+1. Adiciona o plugin oficial @capacitor/push-notifications para Capacitor 8.
+2. Mostra ao cliente, dentro da própria conta, a opção "Ativar notificações dos pedidos".
+3. Solicita permissão do Android e registra o aparelho no Firebase Cloud Messaging.
+4. Vincula o token FCM à conta autenticada na planilha privada, na aba DISPOSITIVOS_PUSH.
+5. Desvincula o aparelho da conta quando o cliente sai.
+6. Mantém o push nativo desativado no APK enquanto o arquivo Android do Firebase não estiver configurado. A loja e os pedidos continuam funcionando.
+
+IMPORTANTE
+Esta etapa registra os aparelhos e prepara o recebimento. O envio automático de notificações quando um pedido é criado ou muda de status será ligado na etapa seguinte, depois de testar o recebimento no Android. Não considerar o push automático concluído ainda.
+
+CONFIGURAÇÃO NECESSÁRIA NO FIREBASE (UMA VEZ)
+1. Abra o projeto Firebase já utilizado pela Drogaria Online.
+2. Em Visão geral do projeto, escolha Adicionar app > Android.
+3. Use exatamente este nome do pacote: br.com.drogariaonline.app
+4. Nome interno sugerido: Drogaria Online Android.
+5. Registre o aplicativo e baixe o arquivo google-services.json.
+6. Não altere o nome do arquivo e não envie o arquivo em conversa pública.
+
+CONFIGURAÇÃO SEGURA NO GITHUB ACTIONS
+1. Abra o repositório felixramos2504-cloud/Drogaria-Online.
+2. Entre em Settings > Secrets and variables > Actions.
+3. Crie um Repository secret com o nome:
+   FIREBASE_GOOGLE_SERVICES_JSON_BASE64
+4. No PowerShell do Windows, execute o comando abaixo, ajustando o caminho do arquivo baixado:
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\Downloads\google-services.json")) | Set-Clipboard
+5. Cole o conteúdo copiado no valor do secret e salve.
+6. Execute a ação "Drogaria Online Android APK" em Actions > Run workflow, ou faça um novo commit no repositório.
+
+O workflow decodifica esse secret diretamente no ambiente temporário de compilação, dentro de android/app/google-services.json. O arquivo não é gravado no repositório.
+
+TESTE NO CELULAR
+1. Instale o APK gerado depois que o secret estiver configurado.
+2. Abra a Drogaria Online e entre em uma conta de cliente.
+3. Acesse Minha conta e toque em Ativar notificações dos pedidos.
+4. Permita as notificações quando o Android perguntar.
+5. O backend criará a aba privada DISPOSITIVOS_PUSH e registrará o aparelho vinculado ao cliente.
+6. Depois disso, testar uma notificação de campanha no Firebase Console com o app instalado e em segundo plano.
+
+O QUE AINDA NÃO FAZER
+- Não criar outro banco de pedidos ou estoque.
+- Não colocar chave privada de conta de serviço dentro do GitHub.
+- Não afirmar que o envio automático de pedidos já está ativo nesta etapa.
+- Não publicar comercialmente sem preencher os dados reais da empresa, política de privacidade e condições de venda.
+
+ARQUIVOS COMPLETOS DESTA VERSÃO
+- Code.gs-MASTER-3.0.txt
+- Index-Android-MASTER-3.0.html.txt
+- Native-Bridge-MASTER-3.0.js.txt
+- Push-Notifications-MASTER-3.0.js.txt
+- Admin-MASTER-3.0.html.txt
