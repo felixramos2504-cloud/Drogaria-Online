@@ -114,6 +114,14 @@ window.enableDrogariaNotifications = async () => {
     if (permission.receive !== 'granted') {
       throw new Error('Permissão não concedida. Ative as notificações da Drogaria Online nas configurações do Android.');
     }
+    await PushNotifications.createChannel({
+      id: 'drogaria_pedidos',
+      name: 'Atualizações de pedidos',
+      description: 'Avisos sobre o andamento dos seus pedidos',
+      importance: 4,
+      visibility: 1,
+      sound: 'default'
+    });
     status('Permissão concedida. Registrando este aparelho no Firebase…');
     await PushNotifications.register();
   } catch (error) {
