@@ -155,14 +155,21 @@ assert(/CODIGO_GERADO/.test(backend) && /shaD_\(codigo\)/.test(backend), 'Códig
 assert(/function recoverWithoutCurrentPassword/.test(storefront), 'Conta conectada oferece recuperação sem senha antiga');
 assert(/\.account-grid \.password-row\{[\s\S]{0,100}display:grid !important/.test(storefront), 'Campos de recuperação usam layout de grade responsivo');
 assert(/\.account-grid \.password-row > button\.password-toggle/.test(storefront), 'Botões Mostrar têm largura fixa sem esmagar o campo');
-assert(/function meusPedidosDrogaria[\s\S]{0,1400}itens:porPedido/.test(backend), 'Histórico do cliente inclui itens do pedido');
+
+assert(/function enviarPushClienteD_/.test(backend) && /ScriptApp\.getOAuthToken\(\)/.test(backend), 'Backend usa OAuth do Apps Script para enviar via FCM HTTP v1');
+assert(/UrlFetchApp\.fetch\(endpoint/.test(backend) && /fcm\.googleapis\.com\/v1\/projects\/drogaria-online\/messages:send/.test(backend), 'Backend aponta para o endpoint oficial FCM do projeto Drogaria Online');
+assert(/function pedidoDrogaria[\s\S]{0,5000}enviarPushClienteD_/.test(backend), 'Pedido novo dispara aviso ao cliente após gravar o pedido');
+assert(/function statusPedidoDrogaria[\s\S]{0,5000}enviarPushClienteD_/.test(backend), 'Mudanças de status disparam aviso ao cliente');
+assert(/oauthScopes/.test(read('appsscript-MASTER-3.1.json.txt')) && /firebase\.messaging/.test(read('appsscript-MASTER-3.1.json.txt')), 'Manifesto documenta escopo de autorização FCM');
+assert(/createChannel/.test(pushModule) && /drogaria_pedidos/.test(pushModule), 'Android cria canal de notificações de pedidos');
+
 assert(/function painelDrogaria[\s\S]{0,1800}itens:porPedido/.test(backend), 'Painel administrativo recebe itens de cada pedido');
 assert(/Itens para separar:/.test(admin), 'Painel mostra produtos, quantidades, SKUs e subtotais para separar');
 assert(/<b>Produtos:<\/b>/.test(storefront), 'Cliente consegue conferir produtos e quantidades nos pedidos');
 assert(/id="orderSearch"/.test(admin) && /id="orderStatusFilter"/.test(admin), 'Painel de pedidos oferece busca e filtro por status');
 assert(/function renderOrders\(\)/.test(admin) && /function clearOrderFilters\(\)/.test(admin), 'Busca de pedidos atualiza e limpa os filtros');
 assert(/o\.telefone/.test(admin) && /i\.produto/.test(admin) && /i\.sku/.test(admin), 'Busca contempla cliente, telefone, produto e SKU');
-console.log('\\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 2.8');
+console.log('\\nVALIDAÇÃO DA DROGARIA ONLINE — MASTER 3.1');
 for (const item of pass) console.log('OK  ' + item);
 if (fail.length) {
   for (const item of fail) console.error('FALHA  ' + item);
