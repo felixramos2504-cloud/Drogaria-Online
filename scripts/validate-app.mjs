@@ -57,6 +57,10 @@ const admin = read('apps-script/Admin.html');
 const bridge = read('www/native-bridge.js');
 const config = read('config.js');
 const workflow = read('.github/workflows/android-apk.yml');
+const packageJson = read('package.json');
+const nativeBridge = read('www/native-bridge.js');
+const pushModule = read('www/push-notifications.js');
+const pushConfig = read('www/native-push-config.js');
 
 if (backend) checkJs('apps-script/Code.gs', backend);
 if (storefront) {
@@ -76,6 +80,12 @@ assert(/catalogoDrogaria[\s\S]{0,1800}item demonstrativo/i.test(backend), 'Catá
 assert(/String\(p\.r\[8\]\)\s*!==?\s*['"]LIVRE['"]/.test(backend), 'Servidor impede pedido de produtos que exigem atendimento farmacêutico');
 assert(/catalogoDrogaria[\s\S]{0,1400}item demonstrativo/i.test(storefront), 'Loja filtra produtos demonstrativos antes de exibir o catálogo');
 assert(/statusPedidoDrogaria/.test(backend) && /CANCELADO/.test(backend), 'Fluxo de cancelamento de pedidos presente');
+assert(/@capacitor\/push-notifications/.test(packageJson), 'Plugin nativo de notificações Capacitor instalado');
+assert(/registrarDispositivoDrogaria/.test(backend) && /desvincularDispositivoDrogaria/.test(backend), 'Backend registra e desvincula dispositivos push autenticados');
+assert(/registrarDispositivoDrogaria/.test(nativeBridge) && /desvincularDispositivoDrogaria/.test(nativeBridge), 'Ponte nativa permite apenas rotas push autorizadas');
+assert(/PushNotifications\.register/.test(pushModule) && /requestPermissions/.test(pushModule), 'Frontend solicita consentimento e registra o aparelho no FCM');
+assert(/DROGARIA_NATIVE_PUSH_ENABLED/.test(pushConfig), 'Push nativo fica desativado por padrão até existir configuração Firebase Android');
+
 assert(/signingConfigs\.release/.test(workflow) && /assembleRelease/.test(workflow), 'Pipeline configura compilação de APK de lançamento');
 assert(/node scripts\/validate-app\.mjs/.test(workflow), 'Pipeline executa a validação antes de compilar');
 assert(/scripts\/\*\*/.test(workflow), 'Alterações no validador disparam o pipeline');
